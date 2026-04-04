@@ -1,0 +1,79 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# ===========================================
+# SECRETS — NEVER COMMIT
+# ===========================================
+# Environment files (API keys, JWT_SECRET, MONGODB_URI, OPENROUTER_API_KEY)
+.env
+.env.*
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+
+# Secret/key files
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Credential files
+credentials.json
+service-account*.json
+*-credentials.json
+secrets.json
+secrets.yaml
+secrets.yml
+k4b-PRD.md 
+PLAN.md 
+
+
+# ===========================================
+# OS / Editor
+# ===========================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/settings.json
+.idea/
+
+# ===========================================
+# Logs / Debug
+# ===========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===========================================
+# Runtime / Cache
+# ===========================================
+*.tsbuildinfo
+.cache/
+.parcel-cache/
+.turbo/
+coverage/
+.nyc_output/
+
+# ===========================================
+# Uploads (server-side temp files)
+# ===========================================
+uploads/
+tmp/
+temp/
