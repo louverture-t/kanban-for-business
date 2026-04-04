@@ -13,13 +13,13 @@
 - SoloDev-Joe 
 
 **Elevator Pitch (1 minute):**
-Kanban for Business is a Kanban-style project management app built for Atlas Infectious Disease Practice (AIDP), a three-person medical practice team. It features five task visualization modes (Dashboard, Kanban, Priority, Roadmap, Team), three-tier role-based access control, AI-powered task decomposition and subtask generation, and a strict No-PHI policy — all deployed on Render with MongoDB Atlas.
+Kanban for Business is a Kanban-style project management app built for AIDP. It features five task visualization modes (Dashboard, Kanban, Priority, Roadmap, Team), three-tier role-based access control, AI-powered task decomposition and subtask generation: all deployed on Render with MongoDB Atlas.
 
 ## Problem Statement
 
-- **Target Users:** Medical practice owner (Superadmin), associates (Manager), team members (User)
+- **Target Users:** owner (Superadmin), associates (Manager), team members (User)
 - **Pain Points:** Fragmented tracking across clinical/business/HR/compliance/IT projects, no lightweight HIPAA-safe tool, manual planning overhead, no role separation
-- **Proposed Solution:** Five view modes, No-PHI policy enforcement, AI task decomposition via OpenRouter, three-tier RBAC
+- **Proposed Solution:** Five view modes, AI task decomposition via OpenRouter, three-tier RBAC
 
 ## Core Features
 
