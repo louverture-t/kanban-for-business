@@ -20,7 +20,7 @@ import {
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
 
-interface TaskInput {
+export interface TaskInput {
   projectId?: string;
   title?: string;
   description?: string;
