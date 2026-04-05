@@ -20,7 +20,10 @@
       "Bash(cp:*)",
       "Bash(node:*)",
       "Bash(xargs grep:*)",
-      "Skill(create-pr-ucf)"
+      "Skill(create-pr-ucf)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [
       "Bash(rm:*)",
