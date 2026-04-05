@@ -19,7 +19,19 @@
       "Bash(cp /c/Users/joeti/.claude/agents/render-deployment-engineer.md /c/Users/joeti/Documents/kanban-for-business/.claude/agents/)",
       "Bash(cp:*)",
       "Bash(node:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm init:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(git pull:*)",
+      "Bash(git:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx vite:*)",
+      "Bash(kill %1)"
     ],
     "deny": [
       "Bash(rm:*)",
