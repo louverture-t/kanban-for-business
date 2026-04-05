@@ -19,7 +19,7 @@ import {
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
 
-interface ProjectInput {
+export interface ProjectInput {
   name?: string;
   description?: string;
   status?: 'active' | 'paused' | 'completed';

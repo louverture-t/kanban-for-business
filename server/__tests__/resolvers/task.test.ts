@@ -34,7 +34,7 @@ let userPayload: TokenPayload;
 let superadminPayload: TokenPayload;
 
 async function seedProject() {
-  const project = await Project.create({ name: 'Test Project', ownerId: userId });
+  const project = await Project.create({ name: 'Test Project', createdBy: userId });
   projectId = project._id as mongoose.Types.ObjectId;
   return project;
 }
@@ -42,9 +42,8 @@ async function seedProject() {
 async function seedMembership(
   pId: mongoose.Types.ObjectId = projectId,
   uId: mongoose.Types.ObjectId = userId,
-  role = 'user',
 ) {
-  return ProjectMember.create({ projectId: pId, userId: uId, role });
+  return ProjectMember.create({ projectId: pId, userId: uId });
 }
 
 async function seedTask(overrides: Record<string, unknown> = {}) {
@@ -250,7 +249,7 @@ describe('searchTasks query', () => {
 
 describe('trashedTasks query', () => {
   it('superadmin sees all trashed tasks across projects', async () => {
-    const otherProject = await Project.create({ name: 'Other', ownerId: userId });
+    const otherProject = await Project.create({ name: 'Other', createdBy: userId });
     await seedTask({ title: 'Trashed A', deletedAt: new Date() });
     await seedTask({
       title: 'Trashed B',
@@ -265,7 +264,7 @@ describe('trashedTasks query', () => {
   });
 
   it('regular user only sees trashed tasks in their projects', async () => {
-    const otherProject = await Project.create({ name: 'Other', ownerId: userId });
+    const otherProject = await Project.create({ name: 'Other', createdBy: userId });
     await seedTask({ title: 'My trashed', deletedAt: new Date() });
     await seedTask({
       title: 'Not my trashed',
@@ -602,9 +601,9 @@ describe('purgeSweep mutation', () => {
     const task = await seedTask({ deletedAt: eightDaysAgo });
 
     // Create related docs
-    await Subtask.create({ taskId: task._id, title: 'Sub', position: 0 });
+    await Subtask.create({ taskId: task._id, title: 'Sub' });
     await Comment.create({ taskId: task._id, authorId: userId, content: 'Test' });
-    const tag = await Tag.create({ name: 'urgent', projectId });
+    const tag = await Tag.create({ name: 'urgent' });
     await TaskTag.create({ taskId: task._id, tagId: tag._id });
 
     const ctx = mockContext({ user: superadminPayload });
@@ -677,8 +676,8 @@ describe('Task field resolvers', () => {
 
   it('Task.subtasks returns subtask array', async () => {
     const task = await seedTask();
-    await Subtask.create({ taskId: task._id, title: 'Sub 1', position: 0 });
-    await Subtask.create({ taskId: task._id, title: 'Sub 2', position: 1 });
+    await Subtask.create({ taskId: task._id, title: 'Sub 1' });
+    await Subtask.create({ taskId: task._id, title: 'Sub 2' });
 
     const result = await TaskFieldResolvers.subtasks(task);
     expect(result).toHaveLength(2);
@@ -686,8 +685,8 @@ describe('Task field resolvers', () => {
 
   it('Task.tags returns tags via TaskTag join', async () => {
     const task = await seedTask();
-    const tag1 = await Tag.create({ name: 'bug', projectId });
-    const tag2 = await Tag.create({ name: 'feature', projectId });
+    const tag1 = await Tag.create({ name: 'bug' });
+    const tag2 = await Tag.create({ name: 'feature' });
     await TaskTag.create({ taskId: task._id, tagId: tag1._id });
     await TaskTag.create({ taskId: task._id, tagId: tag2._id });
 

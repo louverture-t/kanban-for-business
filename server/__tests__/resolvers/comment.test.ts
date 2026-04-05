@@ -38,7 +38,7 @@ beforeEach(async () => {
   await AuditLog.deleteMany({});
   await Notification.deleteMany({});
 
-  const project = await Project.create({ name: 'Test Project', ownerId: userAId });
+  const project = await Project.create({ name: 'Test Project', createdBy: userAId });
   projectId = String(project._id);
 
   const task = await Task.create({

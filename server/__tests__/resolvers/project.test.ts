@@ -528,7 +528,7 @@ describe('Project field resolvers', () => {
     const folder = await ProjectFolder.create({ name: 'Clinical', color: '#ff0000' });
     const project = await Project.create({ name: 'P1', folderId: folder._id });
 
-    const result = await ProjectFieldResolvers.folder(project);
+    const result = await ProjectFieldResolvers.folder(project as any);
     expect(result).not.toBeNull();
     expect(result!.name).toBe('Clinical');
   });
@@ -536,7 +536,7 @@ describe('Project field resolvers', () => {
   it('Project.folder returns null when no folderId', async () => {
     const project = await Project.create({ name: 'NoFolder' });
 
-    const result = ProjectFieldResolvers.folder(project);
+    const result = ProjectFieldResolvers.folder(project as any);
     expect(result).toBeNull();
   });
 
@@ -544,7 +544,7 @@ describe('Project field resolvers', () => {
     const user = await createUser({ username: 'creator' });
     const project = await Project.create({ name: 'P1', createdBy: user._id });
 
-    const result = await ProjectFieldResolvers.createdByUser(project);
+    const result = await ProjectFieldResolvers.createdByUser(project as any);
     expect(result).not.toBeNull();
     expect(result!.username).toBe('creator');
   });
@@ -552,7 +552,7 @@ describe('Project field resolvers', () => {
   it('Project.createdByUser returns null when no createdBy', async () => {
     const project = await Project.create({ name: 'Orphan' });
 
-    const result = ProjectFieldResolvers.createdByUser(project);
+    const result = ProjectFieldResolvers.createdByUser(project as any);
     expect(result).toBeNull();
   });
 
@@ -566,7 +566,7 @@ describe('Project field resolvers', () => {
       { projectId: project._id, userId: user2._id },
     ]);
 
-    const count = await ProjectFieldResolvers.memberCount(project);
+    const count = await ProjectFieldResolvers.memberCount(project as any);
     expect(count).toBe(2);
   });
 });

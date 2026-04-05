@@ -75,7 +75,7 @@ function parseJsonFromResponse<T>(raw: string): T {
 }
 
 // --- Resolvers ---
-interface TaskPreview {
+export interface TaskPreview {
   title: string;
   description?: string;
   priority?: 'high' | 'medium' | 'low';
@@ -83,7 +83,7 @@ interface TaskPreview {
   assigneeId?: string;
 }
 
-interface TaskPreviewInput {
+export interface TaskPreviewInput {
   title: string;
   description?: string;
   priority?: 'high' | 'medium' | 'low';
