@@ -70,9 +70,7 @@ Server validates required vars on startup and exits with clear error if missing.
 
 ## Progressive Disclosure
 
-Domain-specific instructions live in `.claude/rules/`:
-- `testing-standards.md` — test setup, patterns, environment config
-- `ui-components.md` — Shadcn UI, Tailwind, accessibility, No-PHI banner
-- `graphql-resolvers.md` — RBAC guards, error handling, resolver patterns
-
-These load automatically when Claude works on matching file globs.
+Domain-specific instructions live in `.claude/rules/` and load automatically on matching file globs:
+- `testing-standards.md` — test setup, patterns, environment config → `**/__tests__/**/*.ts`, `**/__tests__/**/*.tsx`, `e2e/**/*.ts`
+- `ui-components.md` — Shadcn UI, Tailwind, accessibility, No-PHI banner → `client/src/components/**/*.tsx`, `client/src/pages/**/*.tsx`
+- `graphql-resolvers.md` — RBAC guards, error handling, resolver patterns → `server/schemas/resolvers/**/*.ts`, `server/schemas/typeDefs.ts`
