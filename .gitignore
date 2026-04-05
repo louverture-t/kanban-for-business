@@ -50,6 +50,7 @@ Thumbs.db
 *~
 .vscode/settings.json
 .idea/
+.claude/settings.local.json
 
 # ===========================================
 # Logs / Debug
