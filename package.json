@@ -28,6 +28,7 @@
   "dependencies": {
     "@apollo/client": "^4.1.6",
     "@apollo/server": "^5.5.0",
+    "@as-integrations/express5": "^1.1.2",
     "@hello-pangea/dnd": "^18.0.1",
     "autoprefixer": "^10.4.27",
     "bcryptjs": "^3.0.3",
