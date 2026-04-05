@@ -78,6 +78,9 @@ const typeDefs = `#graphql
     endDate: String
     createdBy: ID
     folderId: ID
+    folder: ProjectFolder
+    createdByUser: User
+    memberCount: Int!
     createdAt: String!
     updatedAt: String!
   }
@@ -111,6 +114,11 @@ const typeDefs = `#graphql
     assignee: User
     position: Int!
     createdBy: ID
+    createdByUser: User
+    project: Project
+    subtasks: [Subtask!]
+    comments: [Comment!]
+    tags: [Tag!]
     archivedAt: String
     completedAt: String
     deletedAt: String

@@ -99,16 +99,18 @@ export function requireSuperadmin(context: GraphQLContext): TokenPayload {
   return user;
 }
 
-export function requireProjectAccess(
+export async function requireProjectAccess(
   context: GraphQLContext,
-  _projectId: string,
-): TokenPayload {
+  projectId: string,
+): Promise<TokenPayload> {
   const user = requireAuth(context);
-  // Superadmin bypasses project membership check
   if (user.role === 'superadmin') {
     return user;
   }
-  // Project membership check will be implemented when ProjectMember model exists
-  // For now, authenticated users pass (actual check added with resolvers)
+  const { default: ProjectMember } = await import('@server/models/ProjectMember.js');
+  const member = await ProjectMember.findOne({ projectId, userId: user.id });
+  if (!member) {
+    throw new ForbiddenError('You are not a member of this project');
+  }
   return user;
 }
