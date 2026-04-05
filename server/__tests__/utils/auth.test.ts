@@ -14,6 +14,14 @@ import {
 } from '@server/utils/auth.js';
 import { AuthenticationError, ForbiddenError } from '@server/utils/errors.js';
 
+// Minimal req/res stubs for GraphQLContext
+const mockReq = {} as GraphQLContext['req'];
+const mockRes = {} as GraphQLContext['res'];
+
+function makeCtx(user: TokenPayload | null): GraphQLContext {
+  return { user, req: mockReq, res: mockRes };
+}
+
 const mockUser: TokenPayload = {
   id: '507f1f77bcf86cd799439011',
   username: 'testuser',
@@ -90,12 +98,12 @@ describe('hashPassword / comparePassword', () => {
 
 describe('requireAuth', () => {
   it('throws AuthenticationError when no user in context', () => {
-    const ctx: GraphQLContext = { user: null };
+    const ctx = makeCtx(null);
     expect(() => requireAuth(ctx)).toThrow(AuthenticationError);
   });
 
   it('passes when user exists in context', () => {
-    const ctx: GraphQLContext = { user: mockUser };
+    const ctx = makeCtx(mockUser);
     const result = requireAuth(ctx);
     expect(result.id).toBe(mockUser.id);
   });
@@ -103,18 +111,18 @@ describe('requireAuth', () => {
 
 describe('requireManagerOrAbove', () => {
   it('throws ForbiddenError for role "user"', () => {
-    const ctx: GraphQLContext = { user: mockUser };
+    const ctx = makeCtx(mockUser);
     expect(() => requireManagerOrAbove(ctx)).toThrow(ForbiddenError);
   });
 
   it('passes for "manager"', () => {
-    const ctx: GraphQLContext = { user: mockManager };
+    const ctx = makeCtx(mockManager);
     const result = requireManagerOrAbove(ctx);
     expect(result.role).toBe('manager');
   });
 
   it('passes for "superadmin"', () => {
-    const ctx: GraphQLContext = { user: mockSuperadmin };
+    const ctx = makeCtx(mockSuperadmin);
     const result = requireManagerOrAbove(ctx);
     expect(result.role).toBe('superadmin');
   });
@@ -122,17 +130,17 @@ describe('requireManagerOrAbove', () => {
 
 describe('requireSuperadmin', () => {
   it('throws ForbiddenError for "manager"', () => {
-    const ctx: GraphQLContext = { user: mockManager };
+    const ctx = makeCtx(mockManager);
     expect(() => requireSuperadmin(ctx)).toThrow(ForbiddenError);
   });
 
   it('throws ForbiddenError for "user"', () => {
-    const ctx: GraphQLContext = { user: mockUser };
+    const ctx = makeCtx(mockUser);
     expect(() => requireSuperadmin(ctx)).toThrow(ForbiddenError);
   });
 
   it('passes for "superadmin"', () => {
-    const ctx: GraphQLContext = { user: mockSuperadmin };
+    const ctx = makeCtx(mockSuperadmin);
     const result = requireSuperadmin(ctx);
     expect(result.role).toBe('superadmin');
   });
