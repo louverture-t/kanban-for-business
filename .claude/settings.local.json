@@ -20,18 +20,7 @@
       "Bash(cp:*)",
       "Bash(node:*)",
       "Bash(xargs grep:*)",
-      "Bash(git checkout:*)",
-      "Bash(npm init:*)",
-      "Bash(npx tsc:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(gh pr:*)",
-      "Bash(git pull:*)",
-      "Bash(git:*)",
-      "Bash(npm ls:*)",
-      "Bash(npx vite:*)",
-      "Bash(kill %1)"
+      "Skill(create-pr-ucf)"
     ],
     "deny": [
       "Bash(rm:*)",
