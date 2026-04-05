@@ -2,6 +2,8 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import multer from 'multer';
+import path from 'path';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
@@ -36,6 +38,50 @@ const corsOptions: cors.CorsOptions = {
 // Health check (REST)
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// File upload REST endpoint
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['.txt', '.md', '.docx', '.pdf'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .txt, .md, .docx, and .pdf files are allowed'));
+    }
+  },
+});
+
+app.post('/api/upload', cors(corsOptions), upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    let text = '';
+
+    if (ext === '.txt' || ext === '.md') {
+      text = req.file.buffer.toString('utf-8');
+    } else if (ext === '.docx') {
+      const mammoth = await import('mammoth');
+      const result = await mammoth.default.extractRawText({ buffer: req.file.buffer });
+      text = result.value;
+    } else if (ext === '.pdf') {
+      const { PDFParse } = await import('pdf-parse');
+      const parser = new PDFParse({ data: new Uint8Array(req.file.buffer) });
+      const result = await parser.getText();
+      text = result.text;
+    }
+
+    res.json({ text, filename: req.file.originalname });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to process file' });
+  }
 });
 
 // GraphQL endpoint
