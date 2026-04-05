@@ -133,3 +133,39 @@ export const MARK_ALL_NOTIFICATIONS_READ = gql`
     markAllNotificationsRead
   }
 `;
+
+// ─── Project Mutations ───────────────────────────────────
+
+export const CREATE_PROJECT_MUTATION = gql`
+  mutation CreateProject($input: ProjectInput!) {
+    createProject(input: $input) {
+      _id
+      name
+      description
+      status
+      color
+      category
+      startDate
+      endDate
+      folderId
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_PROJECT_MUTATION = gql`
+  mutation UpdateProject($id: ID!, $input: ProjectInput!) {
+    updateProject(id: $id, input: $input) {
+      _id
+      name
+      description
+      status
+      color
+      category
+      startDate
+      endDate
+      folderId
+      createdAt
+    }
+  }
+`;
