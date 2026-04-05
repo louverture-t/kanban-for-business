@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "render-deploy", "runs": [{"id": "monorepo-blueprint-with_skill", "prompt": "I have a MERN stack app with Apollo Server v4 and Mongoose connecting to MongoDB Atlas. The frontend is React + Vite in ./client and the API is in ./server. I want to deploy this to Render. Can you set up the render.yaml?", "eval_id": 1, "outputs": [{"name": "render.yaml", "type": "text", "content": "services:\n  # Apollo Server v4 + Express API (Mongoose + MongoDB Atlas)\n  - type: web\n    name: api\n    runtime: node\n    plan: free\n    region: oregon\n    rootDir: ./server\n    buildCommand: npm ci && npm run build\n    startCommand: node dist/index.js\n    healthCheckPath: /graphql\n    pullRequestPreviewsEnabled: true\n    autoDeploy: true\n    envVars:\n      - key: NODE_ENV\n        value: production\n      - key: PORT\n        value: \"4000\"\n      - key: MONGODB_URI\n        sync: false\n      - key: JWT_SECRET\n        generateValue: true\n      - key: CLIENT_URL\n        fromService:\n          type: static\n          name: client\n          property: url\n\n  # React + Vite Static Site\n  - type: static\n    name: client\n    rootDir: ./client\n    buildCommand: npm ci && npm run build\n    staticPublishPath: ./dist\n    plan: free\n    pullRequestPreviewsEnabled: true\n    autoDeploy: true\n    routes:\n      - type: rewrite\n        source: \"/*\"\n        destination: \"/index.html\"\n    headers:\n      - path: \"/static/**\"\n        name: \"Cache-Control\"\n        value: \"public, max-age=31536000, immutable\"\n      - path: \"/index.html\"\n        name: \"Cache-Control\"\n        value: \"public, max-age=0, must-revalidate\"\n      - path: \"/**\"\n        name: \"X-Content-Type-Options\"\n        value: \"nosniff\"\n      - path: \"/**\"\n        name: \"Referrer-Policy\"\n        value: \"strict-origin-when-cross-origin\"\n    envVars:\n      - key: VITE_API_URL\n        fromService:\n          type: web\n          name: api\n          property: url\n"}, {"name": "response.md", "type": "text", "content": "# Render Deployment Guide for MERN Stack App\n\nYour `render.yaml` has been generated for your MERN stack application with Apollo Server v4 and MongoDB Atlas. This guide walks you through deployment.\n\n## Overview\n\nYour deployment consists of **two services**:\n\n| Service | Type | Technology | Purpose |\n|---------|------|-----------|---------|\n| **api** | Web (Node.js) | Express + Apollo Server v4 + Mongoose | GraphQL API backend |\n| **client** | Static Site | React + Vite | Frontend served via Render CDN |\n\nBoth services are configured for automatic deployment on push to your main branch.\n\n---\n\n## Prerequisites\n\n### 1. GitHub Repository\nEnsure your code is pushed to GitHub (or GitLab/Bitbucket). The repo needs:\n- `./server/` directory with Node backend\n- `./client/` directory with React frontend\n- `render.yaml` at the root (commit and push this)\n\n### 2. MongoDB Atlas Connection String\nYou'll need your MongoDB Atlas connection string. Get it by:\n1. Log in to [MongoDB Atlas](https://cloud.mongodb.com/)\n2. Go to your cluster \u2192 **Connect** button\n3. Select **Drivers** tab \u2192 Node.js\n4. Copy the connection string (format: `mongodb+srv://...`)\n5. Replace `<password>` with your database user password\n6. Replace `<dbname>` with your actual database name\n\n**Example:**\n```\nmongodb+srv://myuser:MyPassword@cluster0.xxxxx.mongodb.net/mydatabase?retryWrites=true&w=majority\n```\n\n### 3. Render Account\nCreate a free account at [https://render.com](https://render.com) if you don't have one yet.\n\n---\n\n## Deployment Steps\n\n### Step 1: Commit render.yaml\n\nSave the `render.yaml` file to your repository root, then commit and push:\n\n```bash\ngit add render.yaml\ngit commit -m \"Add Render deployment configuration\"\ngit push origin main\n```\n\n### Step 2: Connect to Render\n\n1. Go to [Render Dashboard](https://dashboard.render.com)\n2. Click the **New** button and select **Blueprint**\n3. Paste your repository URL (HTTPS format):\n   ```\n   https://github.com/your-username/your-repo-name\n   ```\n\n### Step 3: Authorize GitHub\n\nIf prompted, authorize Render to access your GitHub account. This is a one-time setup.\n\n### Step 4: Configure Environment Variables\n\nOn the deployment screen, you'll see fields for environment variables marked as `sync: false`. Fill in:\n\n#### `MONGODB_URI` (Required)\nPaste your MongoDB Atlas connection string from Step 2 above. Example:\n```\nmongodb+srv://myuser:MyPassword@cluster0.xxxxx.mongodb.net/mydatabase?retryWrites=true&w=majority\n```\n\n**Important**: Ensure your MongoDB Atlas cluster allows connections from Render:\n- Go to Atlas Dashboard \u2192 **Network Access**\n- Click **Add IP Address**\n- Select **Allow Access from Anywhere** (add `0.0.0.0/0`)\n- Click **Confirm**\n\nThis allows Render's dynamic IPs to connect. For production, you can later configure static Render IPs (requires paid plan).\n\n#### `JWT_SECRET`\nThis is auto-generated by Render; you don't need to provide it. It will be created automatically.\n\n### Step 5: Review and Deploy\n\n1. Check that all services are listed:\n   - \u2705 **api** (web service, Node.js)\n   - \u2705 **client** (static site)\n2. Verify environment variables are filled\n3. Click **Deploy**\n\nThe deployment will take 2-5 minutes per service.\n\n---\n\n## What Happens During Deployment\n\n### Backend Service (api)\n1. Render clones your repo\n2. Installs dependencies: `npm ci` (in `./server`)\n3. Builds TypeScript: `npm run build` (compiles to `./server/dist`)\n4. Starts the server: `node dist/index.js`\n5. Listens on `process.env.PORT` (Render automatically assigns this)\n6. Health check: Pings `/graphql` every 10 seconds\n\n### Frontend Service (client)\n1. Render clones your repo\n2. Installs dependencies: `npm ci` (in `./client`)\n3. Builds React + Vite: `npm run build` (creates `./client/dist`)\n4. Serves static assets via Render CDN\n5. All routes rewrite to `/index.html` for React Router\n\n---\n\n## Verify Deployment\n\nAfter clicking \"Deploy\", you'll get URLs for both services. Example:\n\n- **API:** `https://api-xxxxx.onrender.com`\n- **Frontend:** `https://client-xxxxx.onrender.com`\n\n### Test the Backend API\nOpen your API URL and append `/graphql`:\n```\nhttps://api-xxxxx.onrender.com/graphql\n```\n\nYou should see Apollo Server's GraphQL sandbox or a welcome message.\n\n### Test the Frontend\nOpen your frontend URL:\n```\nhttps://client-xxxxx.onrender.com\n```\n\nYou should see your React app loading.\n\n### Check Logs\nIf something fails:\n1. Go to Render Dashboard\n2. Click on the service (e.g., **api**)\n3. Go to **Logs** tab\n4. Look for error messages\n\n---\n\n## Key Configuration Details\n\n### Backend (Express + Apollo Server v4)\n\n**Port Binding**\nYour Express/Apollo server MUST bind to `0.0.0.0` and use `process.env.PORT`. Example:\n\n```typescript\n// server/src/index.ts\nconst PORT = process.env.PORT || 4000;\napp.listen(PORT, '0.0.0.0', () => {\n  console.log(`Server running on port ${PORT}`);\n});\n```\n\n**Health Check**\nThe `render.yaml` checks `/graphql` every 10 seconds. Ensure your Apollo Server is mounted at this path:\n\n```typescript\n// server/src/index.ts\napp.use('/graphql', expressMiddleware(server, { context }));\n```\n\n**MongoDB Connection**\nUse this pattern in your Mongoose setup:\n\n```typescript\n// server/src/db.ts\nawait mongoose.connect(process.env.MONGODB_URI!, {\n  serverSelectionTimeoutMS: 10000,\n  maxPoolSize: 10,\n});\n```\n\n**CORS Configuration**\nConfigure CORS to allow your frontend URL:\n\n```typescript\nimport cors from 'cors';\n\napp.use(cors({\n  origin: process.env.CLIENT_URL || 'http://localhost:3000',\n  credentials: true,\n}));\n```\n\n### Frontend (React + Vite)\n\n**Build Output**\nVite builds to `./client/dist`. Verify in your `vite.config.ts`:\n\n```typescript\nexport default {\n  build: {\n    outDir: 'dist',\n  },\n};\n```\n\n**API URL Environment Variable**\nThe frontend receives `VITE_API_URL` from Render pointing to your API service. Access it in React:\n\n```typescript\n// client/src/apollo.ts\nconst API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';\n\nconst client = new ApolloClient({\n  uri: `${API_URL}/graphql`,\n  cache: new InMemoryCache(),\n});\n```\n\n**React Router / SPA Routing**\nThe `render.yaml` includes a rewrite rule that sends all unmapped routes to `/index.html`, allowing React Router to handle client-side navigation.\n\n---\n\n## Troubleshooting\n\n### Issue: Deployment stuck in \"In Progress\"\n\n**Likely cause:** Express server not binding to `0.0.0.0:$PORT`\n\n**Fix:** Update your server binding code:\n```typescript\nconst PORT = process.env.PORT || 4000;\napp.listen(PORT, '0.0.0.0');\n```\n\n### Issue: MongoDB connection timeout\n\n**Likely cause:** Atlas IP whitelist doesn't allow Render\n\n**Fix:**\n1. Go to MongoDB Atlas Dashboard \u2192 Network Access\n2. Add `0.0.0.0/0` to allow all IPs\n3. Redeploy\n\n### Issue: Frontend 404 on refresh (except home page)\n\n**Likely cause:** Missing SPA rewrite rule\n\n**Status:** Your `render.yaml` already includes the rewrite rule, so this should be fixed.\n\n### Issue: Frontend can't reach API (CORS errors)\n\n**Likely cause:** Missing `CLIENT_URL` environment variable or CORS misconfiguration\n\n**Fix:**\n1. Verify `CLIENT_URL` is set in Render Dashboard\n2. Ensure your Express CORS middleware uses `process.env.CLIENT_URL`:\n   ```typescript\n   app.use(cors({\n     origin: process.env.CLIENT_URL || 'http://localhost:3000',\n   }));\n   ```\n\n### Issue: `VITE_API_URL` undefined in frontend\n\n**Likely cause:** Vite doesn't expose environment variables unless prefixed with `VITE_`\n\n**Fix:** In your frontend code, use:\n```typescript\nconst apiUrl = import.meta.env.VITE_API_URL;\n```\n\nThe `render.yaml` already sets `VITE_API_URL`, so no changes needed here.\n\n---\n\n## Next Steps\n\n### 1. Monitor Deployments\nAfter deployment, check the Render Dashboard for:\n- Build logs (ensure no errors)\n- Live status (green checkmark = healthy)\n- Recent activity (last deployment time)\n\n### 2. Set Up Auto-Redeploy\nBoth services have `autoDeploy: true`, so they redeploy on every push to `main`. Disable if needed:\n```yaml\nautoDeploy: false\n```\n\nThen manually trigger deploys from the Render Dashboard.\n\n### 3. Custom Domain (Optional)\nTo use a custom domain:\n1. In Render Dashboard, go to your service\n2. Click **Settings**\n3. Under **Custom Domain**, add your domain\n4. Follow DNS instructions\n\n### 4. View Logs\nAccess logs any time from the Render Dashboard:\n- Click the service \u2192 **Logs** tab\n- Filter by level (Info, Warning, Error)\n\n### 5. Scale Services (Optional)\nUpgrade your plan for:\n- Always-on service (free tier sleeps after 15 min inactivity)\n- Horizontal scaling (multiple instances)\n- Static outbound IPs (for restrictive firewalls)\n\n---\n\n## Environment Variables Reference\n\n| Variable | Service | Required | Example | Notes |\n|----------|---------|----------|---------|-------|\n| `MONGODB_URI` | api | Yes | `mongodb+srv://...` | User must provide in Dashboard |\n| `JWT_SECRET` | api | Auto | (auto-generated) | Render generates securely |\n| `NODE_ENV` | api | Hardcoded | `production` | Set in `render.yaml` |\n| `PORT` | api | Auto | (Render assigns) | Render injects automatically |\n| `CLIENT_URL` | api | Auto | (from client service) | Render links from client service |\n| `VITE_API_URL` | client | Auto | (from api service) | Render links from api service |\n\n---\n\n## Architecture Diagram\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502                   RENDER.COM                             \u2502\n\u2502                                                           \u2502\n\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510   \u2502\n\u2502  \u2502 Frontend Service (React + Vite)                  \u2502   \u2502\n\u2502  \u2502 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500            \u2502   \u2502\n\u2502  \u2502 \u2022 Static site (CDN)                              \u2502   \u2502\n\u2502  \u2502 \u2022 Routes rewrite to /index.html                  \u2502   \u2502\n\u2502  \u2502 \u2022 VITE_API_URL = https://api-xxxxx.onrender.com \u2502   \u2502\n\u2502  \u2502 \u2022 URL: https://client-xxxxx.onrender.com         \u2502   \u2502\n\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518   \u2502\n\u2502                       \u25bc                                   \u2502\n\u2502  \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510   \u2502\n\u2502  \u2502 API Service (Express + Apollo Server v4)         \u2502   \u2502\n\u2502  \u2502 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500            \u2502   \u2502\n\u2502  \u2502 \u2022 GraphQL endpoint at /graphql                   \u2502   \u2502\n\u2502  \u2502 \u2022 Connected to MongoDB Atlas                     \u2502   \u2502\n\u2502  \u2502 \u2022 Health check every 10s                         \u2502   \u2502\n\u2502  \u2502 \u2022 URL: https://api-xxxxx.onrender.com            \u2502   \u2502\n\u2502  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518   \u2502\n\u2502                       \u25bc                                   \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n                        \u25bc\n        \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n        \u2502   MONGODB ATLAS               \u2502\n        \u2502   (External Database)         \u2502\n        \u2502                               \u2502\n        \u2502 \u2022 Connection via              \u2502\n        \u2502   MONGODB_URI env var         \u2502\n        \u2502 \u2022 IP: 0.0.0.0/0 allowed       \u2502\n        \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n---\n\n## Support & Resources\n\n- **Render Docs:** https://render.com/docs\n- **Render Dashboard:** https://dashboard.render.com\n- **MongoDB Atlas:** https://cloud.mongodb.com\n- **Apollo Server v4:** https://www.apollographql.com/docs/apollo-server\n- **Vite:** https://vitejs.dev\n\n---\n\n## Summary\n\nYour `render.yaml` is production-ready! To deploy:\n\n1. \u2705 Push `render.yaml` to GitHub\n2. \u2705 Go to https://dashboard.render.com and create a Blueprint\n3. \u2705 Paste your repo URL\n4. \u2705 Fill in `MONGODB_URI`\n5. \u2705 Click Deploy\n6. \u2705 Monitor logs and verify both services are live\n\nGood luck with your deployment!\n"}], "grading": {"expectations": [{"text": "Output contains a render.yaml file with valid YAML syntax", "passed": true, "evidence": "render.yaml file exists and parses correctly as valid YAML with proper structure, indentation, and key-value pairs (lines 1-61)"}, {"text": "render.yaml includes a web service with runtime: node for the API", "passed": true, "evidence": "Lines 3-5: 'type: web', 'name: api', 'runtime: node' - confirms web service with Node runtime for API"}, {"text": "render.yaml includes a static service for the React/Vite frontend", "passed": true, "evidence": "Lines 30-31: 'type: static', 'name: client' - confirms static service for frontend"}, {"text": "API service has rootDir: ./server", "passed": true, "evidence": "Line 8: 'rootDir: ./server' - API service correctly points to server directory"}, {"text": "Static site has rootDir: ./client", "passed": true, "evidence": "Line 32: 'rootDir: ./client' - static site correctly points to client directory"}, {"text": "MONGODB_URI env var uses sync: false (not hardcoded)", "passed": true, "evidence": "Lines 19-20: MONGODB_URI defined with 'sync: false' - variable marked for user input, not hardcoded"}, {"text": "JWT_SECRET uses generateValue: true", "passed": true, "evidence": "Lines 21-22: JWT_SECRET with 'generateValue: true' - Render will auto-generate secure value"}, {"text": "Static site has a rewrite rule for SPA routing (/* to /index.html)", "passed": true, "evidence": "Lines 38-41: routes section with type: rewrite, source: '/*', destination: '/index.html' - enables React Router SPA routing"}, {"text": "fromService is used to cross-reference URLs between services", "passed": true, "evidence": "Lines 23-27 (CLIENT_URL in API) and lines 56-60 (VITE_API_URL in client) use fromService to dynamically reference service URLs"}, {"text": "Build commands are appropriate (npm ci && npm run build or similar)", "passed": true, "evidence": "Line 9 (API): 'buildCommand: npm ci && npm run build', Line 33 (client): 'buildCommand: npm ci && npm run build' - both use best practice npm ci && npm run build"}, {"text": "Static site has staticPublishPath pointing to dist or similar", "passed": true, "evidence": "Line 34: 'staticPublishPath: ./dist' - static site correctly points to build output directory"}], "summary": {"passed": 11, "failed": 0, "total": 11, "pass_rate": 1.0}}}, {"id": "monorepo-blueprint-without_skill", "prompt": "I have a MERN stack app with Apollo Server v4 and Mongoose connecting to MongoDB Atlas. The frontend is React + Vite in ./client and the API is in ./server. I want to deploy this to Render. Can you set up the render.yaml?", "eval_id": 1, "outputs": [{"name": "render.yaml", "type": "text", "content": "services:\n  # Backend API Service - Apollo Server v4\n  - type: web\n    name: mern-api\n    runtime: node\n    plan: standard\n    buildCommand: cd server && npm install && npm run build\n    startCommand: cd server && npm start\n    envVars:\n      # Database\n      - key: MONGODB_URI\n        fromDatabase:\n          name: mongodb\n          property: connectionString\n\n      # Apollo Server & API Configuration\n      - key: NODE_ENV\n        value: production\n\n      - key: PORT\n        value: 10000\n\n      - key: APOLLO_SERVER_CORS_ORIGIN\n        value: https://mern-app.onrender.com\n\n      - key: APOLLO_SERVER_INTROSPECTION\n        value: \"true\"\n\n      - key: APOLLO_SERVER_INCLUDE_STACKTRACE_IN_ERROR_RESPONSES\n        value: \"false\"\n\n      # Add any additional API-specific environment variables here\n      # Examples:\n      # - key: JWT_SECRET\n      #   sync: false\n      # - key: SENDGRID_API_KEY\n      #   sync: false\n\n    healthCheckPath: /graphql\n    healthCheckTimeout: 30\n    maxInstanceCount: 3\n    minInstanceCount: 1\n\n    # Auto-scaling configuration\n    autoDeploy: true\n    region: oregon\n\n    # Restart policy\n    restartPolicy: on_failure\n\n  # Frontend Service - React + Vite\n  - type: web\n    name: mern-client\n    runtime: node\n    plan: standard\n    buildCommand: cd client && npm install && npm run build\n    startCommand: cd client && npm run preview\n    envVars:\n      - key: NODE_ENV\n        value: production\n\n      - key: VITE_API_URL\n        value: https://mern-api.onrender.com\n\n    healthCheckPath: /\n    healthCheckTimeout: 30\n    maxInstanceCount: 2\n    minInstanceCount: 1\n\n    autoDeploy: true\n    region: oregon\n    restartPolicy: on_failure\n\n    # Static site serving - optional alternative to Node preview server\n    # If you prefer to serve static files only (more efficient):\n    # type: static_site\n    # buildCommand: cd client && npm install && npm run build\n    # staticPublishPath: ./client/dist\n\n  # MongoDB Atlas Database (if managed through Render)\n  # Note: MongoDB Atlas is recommended for production; managed DBaaS option shown below\n  - type: pserv\n    name: mongodb\n    runtime: docker\n    plan: standard\n\n    # Using MongoDB Docker image\n    dockerCommand: mongod --bind_ip_all\n\n    envVars:\n      - key: MONGO_INITDB_ROOT_USERNAME\n        value: admin\n\n      - key: MONGO_INITDB_ROOT_PASSWORD\n        sync: false\n\n    # Disk for data persistence\n    disk:\n      name: mongodb-data\n      mountPath: /data/db\n      sizeGB: 10\n\n    region: oregon\n    autoDeploy: false\n\ndatabases:\n  # MongoDB Database Definition\n  - name: mongodb\n    databaseName: mern_db\n    plan: standard\n    region: oregon\n    version: \"6.0\"\n\n# Environment Variables (shared/global)\nenvVars:\n  - key: LOG_LEVEL\n    value: info\n\n  - key: RENDER_EXTERNAL_URL\n    fromService:\n      name: mern-api\n      property: host\n"}, {"name": "response.md", "type": "text", "content": "# MERN Stack Deployment to Render - Setup Guide\n\n## Overview\nThis guide covers deploying a MERN (MongoDB, Express, React, Node) stack application with Apollo Server v4 and Mongoose to Render, using the provided `render.yaml` configuration file.\n\n## Architecture\n- **Backend**: Node.js Express server with Apollo Server v4 (GraphQL)\n- **Frontend**: React + Vite single-page application\n- **Database**: MongoDB (via MongoDB Atlas recommended, or local Mongo service)\n- **Deployment Platform**: Render\n\n## Prerequisites\n1. **Render Account**: Sign up at https://render.com\n2. **GitHub Repository**: Your code pushed to GitHub (Render integrates with GitHub)\n3. **MongoDB Atlas**: Create a free cluster at https://www.mongodb.com/cloud/atlas (recommended)\n4. **Project Structure**:\n   ```\n   your-repo/\n   \u251c\u2500\u2500 client/              # React + Vite frontend\n   \u2502   \u251c\u2500\u2500 package.json\n   \u2502   \u251c\u2500\u2500 vite.config.js\n   \u2502   \u2514\u2500\u2500 dist/            # Built output\n   \u251c\u2500\u2500 server/              # Express + Apollo Server backend\n   \u2502   \u251c\u2500\u2500 package.json\n   \u2502   \u251c\u2500\u2500 index.js (or start file)\n   \u2502   \u2514\u2500\u2500 build/           # Built output (if using TypeScript)\n   \u2514\u2500\u2500 render.yaml          # Deployment configuration\n   ```\n\n## Step 1: Prepare Your Repository\n\n### Backend (./server)\nEnsure your `server/package.json` has:\n```json\n{\n  \"name\": \"mern-api\",\n  \"version\": \"1.0.0\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"dev\": \"nodemon index.js\",\n    \"build\": \"echo 'Build step (optional for Node)'\",\n    \"start\": \"node index.js\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.2\",\n    \"apollo-server-express\": \"^4.x.x\",\n    \"mongoose\": \"^8.x.x\",\n    \"cors\": \"^2.8.5\",\n    \"dotenv\": \"^16.x.x\"\n  }\n}\n```\n\n**Key Requirements**:\n- Must define a `start` script that runs your server\n- Server should listen on `process.env.PORT` (default: 10000 on Render)\n- Configure MongoDB connection string from environment variable `MONGODB_URI`\n\n### Frontend (./client)\nEnsure your `client/package.json` has:\n```json\n{\n  \"name\": \"mern-client\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  }\n}\n```\n\n**Key Requirements**:\n- `vite build` command creates a `dist/` folder\n- Environment variable `VITE_API_URL` must be used for API endpoint configuration\n- Example in your client code:\n  ```javascript\n  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';\n  ```\n\n### Environment Variables\nCreate a `.env.local` file in your server directory (NOT committed to GitHub):\n```\nMONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/mern_db?retryWrites=true&w=majority\nNODE_ENV=production\nPORT=10000\nAPOLLO_SERVER_CORS_ORIGIN=https://mern-app.onrender.com\n```\n\n## Step 2: Set Up MongoDB Atlas (Recommended)\n\n1. **Create Cluster**: Go to MongoDB Atlas and create a free M0 cluster\n2. **Get Connection String**:\n   - Click \"Connect\" on your cluster\n   - Choose \"Connect your application\"\n   - Copy the connection string (format: `mongodb+srv://username:password@cluster.mongodb.net/dbname`)\n3. **Create Database User**: Set username and password (save these securely)\n4. **Whitelist IP**: Add `0.0.0.0/0` to allow connections from Render\n\n## Step 3: Deploy to Render\n\n### Option A: Using render.yaml (Recommended)\n\n1. **Push to GitHub**:\n   ```bash\n   git add render.yaml\n   git commit -m \"Add Render deployment configuration\"\n   git push origin main\n   ```\n\n2. **Connect Repository to Render**:\n   - Log in to Render dashboard\n   - Click \"New +\" \u2192 \"Blueprint\"\n   - Connect your GitHub account and select your repository\n   - Select the branch (typically `main`)\n   - Click \"Apply\"\n\n3. **Set Environment Variables**:\n   - Go to your API service settings\n   - Add/update environment variables:\n     - `MONGODB_URI`: Your MongoDB Atlas connection string\n     - Any other secrets (JWT_SECRET, API keys, etc.)\n   - For frontend, set `VITE_API_URL` to your deployed API URL\n\n4. **Deploy**: Render automatically deploys when you push to GitHub (auto-deploy enabled in render.yaml)\n\n### Option B: Manual Service Creation\n\n1. **Create Backend Service**:\n   - Click \"New +\" \u2192 \"Web Service\"\n   - Connect GitHub repository\n   - Set Name: `mern-api`\n   - Build Command: `cd server && npm install && npm run build`\n   - Start Command: `cd server && npm start`\n   - Plan: Standard\n   - Add environment variables (see Step 2)\n   - Click \"Create Web Service\"\n\n2. **Create Frontend Service**:\n   - Repeat above, but:\n   - Set Name: `mern-client`\n   - Build Command: `cd client && npm install && npm run build`\n   - Start Command: `cd client && npm run preview`\n   - Set `VITE_API_URL` to your backend service URL\n\n## Step 4: Verify Deployment\n\n1. **Check Logs**:\n   - Go to your service on Render dashboard\n   - Click \"Logs\" to see build and runtime logs\n   - Look for any errors during deployment\n\n2. **Test Backend**:\n   ```bash\n   curl https://mern-api.onrender.com/graphql\n   ```\n   - Should return Apollo Server response or GraphQL playground\n\n3. **Test Frontend**:\n   - Visit `https://mern-client.onrender.com`\n   - Check browser console for any API connection errors\n   - Verify that API requests go to correct backend URL\n\n4. **Check Database Connection**:\n   - Monitor MongoDB Atlas activity in their dashboard\n   - Look for successful connections from Render\n\n## Configuration Notes\n\n### Ports\n- **Backend API**: Listens on port 10000 (or as specified in `PORT` env var)\n- **Frontend**: Vite preview server runs on port 4000 (managed by Render)\n- Render automatically handles port routing and SSL/TLS\n\n### CORS Configuration\n- `APOLLO_SERVER_CORS_ORIGIN` must match your frontend domain\n- Update to your actual Render frontend URL (e.g., `https://mern-client.onrender.com`)\n- Example Apollo Server setup:\n  ```javascript\n  const server = new ApolloServer({\n    typeDefs,\n    resolvers,\n    cors: {\n      origin: process.env.APOLLO_SERVER_CORS_ORIGIN || 'http://localhost:3000',\n      credentials: true,\n    },\n  });\n  ```\n\n### MongoDB Connection\n- **Atlas Connection String Format**:\n  ```\n  mongodb+srv://username:password@cluster-name.mongodb.net/database-name?retryWrites=true&w=majority\n  ```\n- **Local MongoDB** (if using Render Docker service):\n  ```\n  mongodb://admin:password@mongodb:27017/mern_db?authSource=admin\n  ```\n\n### Production Optimization\n- **Min/Max Instances**: Set based on expected traffic (default: min=1, max=3)\n- **Health Checks**: Backend checks `/graphql`, frontend checks `/`\n- **Auto Scaling**: Enabled to handle traffic spikes\n- **Restart Policy**: Set to `on_failure` for reliability\n\n## Common Issues & Troubleshooting\n\n### Issue: \"Cannot find module\" during build\n**Solution**:\n- Ensure all dependencies are in `package.json` (not global)\n- Run `npm install` locally and commit `package-lock.json`\n\n### Issue: Frontend shows blank page\n**Solution**:\n- Check browser console for CORS errors\n- Verify `VITE_API_URL` is set correctly\n- Ensure backend is running and responding to requests\n\n### Issue: Database connection timeout\n**Solution**:\n- Verify MongoDB Atlas connection string is correct\n- Check that Render IP is whitelisted in MongoDB Atlas (use `0.0.0.0/0`)\n- Test connection string locally first\n\n### Issue: Deployment stuck on \"Deploying\"\n**Solution**:\n- Check build logs for errors\n- Ensure build command completes within time limit\n- Verify `start` script doesn't hang\n\n### Issue: Backend responding but frontend can't connect\n**Solution**:\n- Check CORS headers in backend response\n- Verify `VITE_API_URL` matches backend service URL exactly\n- Check browser Network tab for failed requests\n- Look for \"Mixed Content\" errors if using HTTP instead of HTTPS\n\n## Environment Variables Reference\n\n| Variable | Service | Value | Notes |\n|----------|---------|-------|-------|\n| `MONGODB_URI` | Backend | Connection string | From MongoDB Atlas |\n| `NODE_ENV` | Both | `production` | Optimize code |\n| `PORT` | Backend | `10000` | Render default |\n| `VITE_API_URL` | Frontend | Backend service URL | e.g., `https://mern-api.onrender.com` |\n| `APOLLO_SERVER_CORS_ORIGIN` | Backend | Frontend service URL | e.g., `https://mern-client.onrender.com` |\n| `JWT_SECRET` | Backend | Your secret | If using JWT auth |\n\n## Updating Deployment\n\n1. **Code Changes**:\n   ```bash\n   git add .\n   git commit -m \"Update feature\"\n   git push origin main\n   ```\n   - Render automatically rebuilds and deploys (auto-deploy enabled)\n\n2. **Environment Variables**:\n   - Edit in Render dashboard (Settings \u2192 Environment)\n   - Services automatically restart with new variables\n\n3. **Database Migrations**:\n   - For schema changes, update Mongoose models and deploy\n   - Add migration logic to server startup if needed\n\n## Cost Considerations\n\n- **Free Tier**: Limited to 0.5GB RAM per service (Render puts free services to sleep after 15 mins of inactivity)\n- **Standard Plan**: $7-12/month per service (always running)\n- **MongoDB Atlas**: Free tier up to 5GB, then pay-as-you-go\n- **Recommendation**: Start free, upgrade to Standard when you need always-on services\n\n## Production Checklist\n\nBefore going live:\n- [ ] MongoDB Atlas cluster created and secured\n- [ ] Connection string saved in Render environment variables\n- [ ] Frontend `VITE_API_URL` points to production backend\n- [ ] Backend `APOLLO_SERVER_CORS_ORIGIN` includes production frontend domain\n- [ ] Environment variables don't contain local paths\n- [ ] Build and start scripts tested locally\n- [ ] Database backups configured in MongoDB Atlas\n- [ ] Error tracking/monitoring configured (e.g., Sentry)\n- [ ] Logs being monitored for issues\n- [ ] Custom domain configured (optional but recommended)\n\n## Additional Resources\n\n- **Render Documentation**: https://render.com/docs\n- **Apollo Server Deployment**: https://www.apollographql.com/docs/apollo-server/deployment/\n- **MongoDB Atlas**: https://www.mongodb.com/docs/atlas/\n- **Vite Deployment**: https://vitejs.dev/guide/static-deploy.html\n- **Render Pricing**: https://render.com/pricing\n\n## Support & Debugging\n\nFor issues:\n1. Check Render service logs in the dashboard\n2. Verify all environment variables are set\n3. Test API locally before deploying\n4. Use Render's curl health checks to test endpoints\n5. Check MongoDB Atlas activity logs for connection issues\n\n---\n\n**Generated**: April 2026\n**Template Version**: 1.0 (MERN + Apollo Server v4)\n"}], "grading": {"expectations": [{"text": "Output contains a render.yaml file with valid YAML syntax", "passed": true, "evidence": "render.yaml file exists and parses correctly with proper YAML structure"}, {"text": "render.yaml includes a web service with runtime: node for the API", "passed": true, "evidence": "Lines 3-5: 'type: web', 'name: mern-api', 'runtime: node' - confirms web service with Node runtime"}, {"text": "render.yaml includes a static service for the React/Vite frontend", "passed": false, "evidence": "Lines 52-54 show 'type: web' for frontend, not 'type: static'. Comments on lines 74-78 suggest static as alternative but actual config uses web service with 'npm run preview' which is inefficient for static content"}, {"text": "API service has rootDir: ./server", "passed": false, "evidence": "No explicit rootDir for API. Line 7 has 'buildCommand: cd server && npm install && npm run build' which works but less clean than rootDir: ./server approach"}, {"text": "Static site has rootDir: ./client", "passed": false, "evidence": "No explicit rootDir for frontend. Line 56 has 'buildCommand: cd client && npm install && npm run build' rather than using rootDir parameter"}, {"text": "MONGODB_URI env var uses sync: false (not hardcoded)", "passed": false, "evidence": "Lines 11-14 show MONGODB_URI uses 'fromDatabase' to reference managed MongoDB, not 'sync: false' for user input. This approach requires managed database within Render rather than Atlas"}, {"text": "JWT_SECRET uses generateValue: true", "passed": false, "evidence": "No JWT_SECRET environment variable present in the API service envVars. Comments on lines 34-37 show it's optional/commented out, not configured"}, {"text": "Static site has a rewrite rule for SPA routing (/* to /index.html)", "passed": false, "evidence": "No routes/rewrite rules section in frontend config. This is critical for SPA routing but missing from the configuration"}, {"text": "fromService is used to cross-reference URLs between services", "passed": false, "evidence": "Line 63 shows hardcoded VITE_API_URL: 'https://mern-api.onrender.com' rather than using fromService for dynamic reference. No CLIENT_URL env var in API service"}, {"text": "Build commands are appropriate (npm ci && npm run build or similar)", "passed": false, "evidence": "Line 7 uses 'npm install' not 'npm ci' (less secure/deterministic). Line 56 also uses 'npm install' instead of 'npm ci'"}, {"text": "Static site has staticPublishPath pointing to dist or similar", "passed": false, "evidence": "No staticPublishPath property. Comments on line 78 mention this as optional alternative, but since config uses web service type instead of static, this property is not used"}], "summary": {"passed": 2, "failed": 9, "total": 11, "pass_rate": 0.18}}}, {"id": "single-service-mcp-with_skill", "prompt": "I just need to quickly deploy my Express + Apollo GraphQL API to Render. It's a single service, no frontend, just the API connecting to my MongoDB Atlas cluster. Can you create it via MCP?", "eval_id": 2, "outputs": [{"name": "QUICK_REFERENCE.md", "type": "text", "content": "# Quick Reference: Single-Service Render Deployment via MCP\n\n## One-Minute Setup\n\n1. **Get API key**: https://dashboard.render.com/u/*/settings#api-keys\n2. **Add MCP** (Claude Code):\n   ```bash\n   claude mcp add --transport http render https://mcp.render.com/mcp \\\n     --header \"Authorization: Bearer <API_KEY>\"\n   ```\n3. **Run command**:\n   ```javascript\n   create_web_service({\n     name: \"my-app-api\",\n     repo: \"https://github.com/YOUR_USERNAME/YOUR_REPO\",\n     branch: \"main\",\n     rootDir: \"./\",\n     runtime: \"node\",\n     buildCommand: \"npm ci && npm run build\",\n     startCommand: \"node dist/index.js\",\n     plan: \"free\",\n     envVars: [\n       { key: \"NODE_ENV\", value: \"production\" },\n       { key: \"PORT\", value: \"4000\" },\n       { key: \"MONGODB_URI\", value: \"mongodb+srv://user:pass@cluster.mongodb.net/dbname\" },\n       { key: \"JWT_SECRET\", value: \"openssl-rand-hex-32-output\" }\n     ]\n   })\n   ```\n\n## Critical Checklist\n\n- [ ] Express listens on `process.env.PORT` and `0.0.0.0`\n- [ ] `package.json` in the `rootDir`\n- [ ] `npm run build` works locally (outputs to `dist/`)\n- [ ] GitHub repo is public or Render has access\n- [ ] MongoDB Atlas allows `0.0.0.0/0` network access\n- [ ] JWT_SECRET is a random 64-char hex string\n\n## Test After Deploy\n\n```bash\ncurl -X POST https://my-app-api.onrender.com/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}'\n```\n\nShould return JSON response (no 502/503).\n\n## If Build Fails\n\n```javascript\nlist_logs({\n  resource: [\"srv_xxxxxxxxxxxxxxxx\"],\n  level: [\"error\"],\n  limit: 20\n})\n```\n\n## If MongoDB Doesn't Connect\n\n1. Go to MongoDB Atlas \u2192 Network Access\n2. Click \"Add IP Address\" \u2192 \"Allow Access from Anywhere\"\n3. Confirm `MONGODB_URI` includes correct password and database name\n\n## Common env var mistakes\n\n| var | Problem | Fix |\n|-----|---------|-----|\n| `PORT` | Mismatch with code | Must be `4000` (or whatever your code expects) |\n| `MONGODB_URI` | Wrong password/db | Check Atlas connection string, replace `<password>` and `<dbname>` |\n| `JWT_SECRET` | Too short/not secure | Use `openssl rand -hex 32` |\n| `NODE_ENV` | Not set to `production` | Add to envVars list |\n\n## Status Commands\n\n```javascript\n// Check if live\nlist_deploys({ serviceId: \"srv_xxx\", limit: 1 })\n\n// See all services\nlist_services()\n\n// Update env vars (triggers redeploy)\nupdate_env_vars({\n  serviceId: \"srv_xxx\",\n  envVars: [{ key: \"JWT_SECRET\", value: \"new-value\" }]\n})\n```\n\n---\n\n**Full details**: See `response.md` in the same directory.\n"}, {"name": "response.md", "type": "text", "content": "# Deploy Express + Apollo GraphQL API to Render (Single Service)\n\nYou're deploying a single backend service, which is perfect for **Direct MCP Creation**\u2014no `render.yaml` needed, just one command to deploy your API.\n\n## Step 1: Prerequisites Checklist\n\nBefore running the MCP command, verify:\n\n- [ ] Your code is pushed to GitHub (or GitLab/Bitbucket)\n- [ ] You have your **Render API key** from https://dashboard.render.com/u/*/settings#api-keys\n- [ ] You have your **MongoDB Atlas connection string** (including password and database name)\n- [ ] Your Express server listens on `process.env.PORT` and binds to `0.0.0.0`\n\n**Example Express + Apollo Server v4 startup:**\n```javascript\nimport express from 'express';\nimport { ApolloServer } from '@apollo/server';\nimport { expressMiddleware } from '@apollo/server/express4';\n\nconst app = express();\nconst server = new ApolloServer({ typeDefs, resolvers });\nawait server.start();\n\napp.use('/graphql', expressMiddleware(server));\n\nconst PORT = process.env.PORT || 4000;\napp.listen(PORT, '0.0.0.0', () => {\n  console.log(`Apollo Server listening on http://0.0.0.0:${PORT}/graphql`);\n});\n```\n\n## Step 2: Configure Render MCP\n\nAdd the Render MCP to your AI tool (Claude Code, Cursor, etc.):\n\n### Claude Code\n```bash\nclaude mcp add --transport http render https://mcp.render.com/mcp \\\n  --header \"Authorization: Bearer <YOUR_RENDER_API_KEY>\"\n```\n\n### Cursor\nAdd to `~/.cursor/mcp.json`:\n```json\n{\n  \"mcpServers\": {\n    \"render\": {\n      \"url\": \"https://mcp.render.com/mcp\",\n      \"headers\": { \"Authorization\": \"Bearer <YOUR_RENDER_API_KEY>\" }\n    }\n  }\n}\n```\n\n### Codex\n```bash\nexport RENDER_API_KEY=\"<YOUR_RENDER_API_KEY>\"\ncodex mcp add render --url https://mcp.render.com/mcp --bearer-token-env-var RENDER_API_KEY\n```\n\nReplace `<YOUR_RENDER_API_KEY>` with your actual API key from the Render Dashboard.\n\n## Step 3: Verify Workspace Selection\n\nCheck which workspace you're deploying to:\n\n```\nget_selected_workspace()\n```\n\nIf you have multiple workspaces, set the active one before proceeding. (Your MCP tool will show available workspaces.)\n\n## Step 4: Run the MCP Command to Create Your API Service\n\nUse this exact command, replacing the placeholders with your actual values:\n\n```javascript\ncreate_web_service({\n  name: \"my-app-api\",\n  repo: \"https://github.com/YOUR_USERNAME/YOUR_REPO\",\n  branch: \"main\",\n  rootDir: \"./\",\n  runtime: \"node\",\n  buildCommand: \"npm ci && npm run build\",\n  startCommand: \"node dist/index.js\",\n  plan: \"free\",\n  envVars: [\n    { key: \"NODE_ENV\", value: \"production\" },\n    { key: \"PORT\", value: \"4000\" },\n    { key: \"MONGODB_URI\", value: \"mongodb+srv://user:password@cluster.mongodb.net/dbname\" },\n    { key: \"JWT_SECRET\", value: \"your-secure-random-jwt-secret\" }\n  ]\n})\n```\n\n### Parameters Explained\n\n| Parameter | Value | Notes |\n|-----------|-------|-------|\n| **name** | `my-app-api` | Unique service ID (becomes part of your URL: `my-app-api.onrender.com`) |\n| **repo** | GitHub HTTPS URL | Must be accessible to Render. Use HTTPS, not SSH. |\n| **branch** | `main` | Deploy from this branch. Auto-redeploys on push. |\n| **rootDir** | `./` | Location of your `package.json`. Use `./server` if in a monorepo. |\n| **runtime** | `node` | Node.js runtime (auto-detects latest LTS) |\n| **buildCommand** | `npm ci && npm run build` | Installs dependencies and compiles TypeScript to `dist/` |\n| **startCommand** | `node dist/index.js` | Runs your compiled Express server |\n| **plan** | `free` | Free tier; upgrade to `standard` for reserved resources |\n| **PORT** | `4000` | Standard Apollo Server port. Must match your code. |\n| **MONGODB_URI** | Your Atlas URI | Full connection string: `mongodb+srv://user:pass@cluster.mongodb.net/dbname` |\n| **JWT_SECRET** | Random string | Generate with: `openssl rand -hex 32` |\n\n### MongoDB Atlas Connection String Format\n\nYour connection string should look like:\n```\nmongodb+srv://username:password@cluster-name.mongodb.net/database-name?retryWrites=true&w=majority\n```\n\n**Before pasting, ensure:**\n1. Replace `<password>` with your actual MongoDB user password\n2. Replace `<dbname>` with your target database (e.g., `myapp`)\n3. Configure **Network Access** in Atlas: Add `0.0.0.0/0` to allow Render access (or use static outbound IPs if you have a paid plan)\n\n### Generate a Secure JWT Secret\n\n```bash\nopenssl rand -hex 32\n```\nOutput: `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6...`\n\nPaste this entire string as the `JWT_SECRET` value.\n\n## Step 5: Monitor the Deployment\n\nOnce you run the command, the service will be created and automatically deploy. Monitor progress:\n\n### Check Deployment Status\n```\nlist_deploys({\n  serviceId: \"srv_xxxxxxxxxxxxxxxx\",\n  limit: 1\n})\n```\nLook for `status: \"live\"` when complete. (The MCP command will return your `serviceId`.)\n\n### View Build Logs\nIf the deploy fails, check the logs:\n```\nlist_logs({\n  resource: [\"srv_xxxxxxxxxxxxxxxx\"],\n  level: [\"error\"],\n  limit: 20\n})\n```\n\n### Verify GraphQL Endpoint\nOnce live, test your API:\n```bash\ncurl -X POST https://my-app-api.onrender.com/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}'\n```\n\nShould return: `{\"data\":{\"__typename\":\"Query\"}}` (or similar, depending on your schema).\n\n## Step 6: Important Post-Deployment Steps\n\n### 1. Confirm MongoDB Atlas Network Access\nYour Render service needs to connect to Atlas. Two options:\n\n**Option A: Allow from Anywhere (Simplest)**\n- Go to MongoDB Atlas \u2192 Network Access\n- Click \"Add IP Address\" \u2192 \"Allow Access from Anywhere\" \u2192 Confirm\n- This adds `0.0.0.0/0` (trusts strong credentials)\n\n**Option B: Restrict to Render IPs (More Secure)**\n- In Render Dashboard, go to your API service \u2192 Connect\n- Copy the \"Outbound IP\" addresses\n- In Atlas \u2192 Network Access, add each IP individually\n- More restrictive but may break if Render rotates IPs\n\n### 2. Test MongoDB Connection\nIn your Apollo Server, confirm Mongoose connects on startup:\n```javascript\nconst db = await mongoose.connect(process.env.MONGODB_URI);\nconsole.log(`Connected to MongoDB at ${db.connection.host}`);\n```\nCheck logs: if you see a connection error, revisit the Atlas network access step.\n\n### 3. Environment Variables\nAll four env vars are critical:\n- **NODE_ENV**: Tells Express/Apollo to optimize for production\n- **PORT**: Must match what your code listens on (typically 4000)\n- **MONGODB_URI**: Connection string; if wrong, server won't start\n- **JWT_SECRET**: Used by your authentication middleware\n\nIf you need to change them later:\n```javascript\nupdate_env_vars({\n  serviceId: \"srv_xxxxxxxxxxxxxxxx\",\n  envVars: [\n    { key: \"JWT_SECRET\", value: \"new-secret-value\" }\n  ]\n})\n```\nThis triggers a redeploy automatically.\n\n## Step 7: Scaling Up (Optional)\n\n### Adding a Frontend Later?\nIf you add a React + Vite client, you'll need a second service. At that time, use:\n```javascript\ncreate_static_site({\n  name: \"my-app-client\",\n  repo: \"https://github.com/YOUR_USERNAME/YOUR_REPO\",\n  branch: \"main\",\n  rootDir: \"./client\",\n  buildCommand: \"npm ci && npm run build\",\n  publishPath: \"./dist\",\n  envVars: [\n    { key: \"VITE_API_URL\", value: \"https://my-app-api.onrender.com\" }\n  ]\n})\n```\nThen update your API's CORS to allow the client:\n```javascript\nupdate_env_vars({\n  serviceId: \"srv_xxxxxxxxxxxxxxxx\",\n  envVars: [\n    { key: \"ALLOWED_ORIGINS\", value: \"https://my-app-client.onrender.com\" }\n  ]\n})\n```\n\n### Custom Domain?\nIn Render Dashboard \u2192 Your Service \u2192 Settings \u2192 Custom Domains, bind your domain (e.g., `api.example.com`).\n\n## Troubleshooting\n\n| Symptom | Cause | Fix |\n|---------|-------|-----|\n| **Build fails with `npm ERR!`** | Missing `package.json` or dependencies | Ensure `package.json` is in the `rootDir` and `npm ci` succeeds locally |\n| **Deploy stuck \"In Progress\"** | Express not listening on `$PORT` and `0.0.0.0` | Update your server: `app.listen(process.env.PORT, '0.0.0.0')` |\n| **GraphQL endpoint returns 502** | MongoDB connection failed | Check Atlas network access and `MONGODB_URI` env var |\n| **GraphQL endpoint returns 404** | Wrong path or Apollo not mounted | Verify Apollo Server is at `/graphql` in your Express app |\n| **Env vars not set** | Create command didn't include them | Use `update_env_vars()` to add missing vars and trigger redeploy |\n\n## Verification Checklist\n\nAfter deployment completes, confirm:\n\n- [ ] Service status is \"live\" in Render Dashboard\n- [ ] Deploy logs show no errors\n- [ ] GraphQL endpoint returns 200 (test with curl or Insomnia)\n- [ ] MongoDB connection logs show \"Connected to MongoDB\"\n- [ ] JWT_SECRET is set and doesn't log to console\n- [ ] Can execute a simple GraphQL query (e.g., schema introspection)\n\n## Next Steps\n\n- **Monitor logs** regularly: `list_logs()` to catch issues early\n- **Set up auto-redeploys**: Already enabled\u2014every push to `main` triggers a deploy\n- **Add error tracking**: Integrate Sentry or similar for production monitoring\n- **Scale to paid plan** if you exceed free tier limits (free is 0.1 CPU + 512 MB RAM)\n\n## MCP Commands Reference\n\n| Command | Purpose |\n|---------|---------|\n| `create_web_service({...})` | Deploy your API |\n| `list_services()` | View all your services |\n| `get_service({ serviceId: \"...\" })` | Get full service details |\n| `list_deploys({ serviceId: \"...\", limit: 5 })` | View recent deployments |\n| `list_logs({ resource: [...], level: [...] })` | Debug issues |\n| `update_env_vars({ serviceId: \"...\", envVars: [...] })` | Change config and redeploy |\n| `create_deploy({ serviceId: \"...\" })` | Manual redeploy (without code push) |\n\nGood luck! Your Express + Apollo API will be live in 2\u20135 minutes.\n"}], "grading": {"expectations": [{"text": "Uses MCP create_web_service (or equivalent) to create the service", "passed": true, "evidence": "Lines 77-93 in response.md show exact MCP command: 'create_web_service({...})' with all required parameters for creating web service"}, {"text": "Specifies runtime as node", "passed": true, "evidence": "Line 83: 'runtime: \"node\"' - explicitly specified in create_web_service call"}, {"text": "Includes a buildCommand with npm ci or npm install", "passed": true, "evidence": "Line 84: 'buildCommand: \"npm ci && npm run build\"' - uses npm ci which is correct best practice"}, {"text": "Includes a startCommand pointing to the compiled entry file", "passed": true, "evidence": "Line 85: 'startCommand: \"node dist/index.js\"' - correctly points to compiled output"}, {"text": "Includes MONGODB_URI as an environment variable", "passed": true, "evidence": "Line 90: MONGODB_URI in envVars with example connection string 'mongodb+srv://user:password@cluster.mongodb.net/dbname'"}, {"text": "Provides guidance on MongoDB Atlas IP allowlisting", "passed": true, "evidence": "Lines 119-122 explicitly guide to 'Configure Network Access in Atlas: Add 0.0.0.0/0 to allow Render access (or use static outbound IPs if you have a paid plan)'"}, {"text": "Does NOT create a static site (user said API only)", "passed": true, "evidence": "No static site creation in main deployment. Frontend is mentioned only in Step 7 as optional 'Adding a Frontend Later', not created upfront"}, {"text": "Mentions or configures PORT environment variable", "passed": true, "evidence": "Line 89 (envVars): 'key: \"PORT\", value: \"4000\"' and lines 108, 193 discuss PORT configuration extensively"}], "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}}}, {"id": "single-service-mcp-without_skill", "prompt": "I just need to quickly deploy my Express + Apollo GraphQL API to Render. It's a single service, no frontend, just the API connecting to my MongoDB Atlas cluster. Can you create it via MCP?", "eval_id": 2, "outputs": [{"name": "response.md", "type": "text", "content": "# Deploying Express + Apollo GraphQL API to Render via MCP\n\n## Overview\nThis guide provides MCP commands and step-by-step instructions to deploy a single Express + Apollo GraphQL API service to Render with MongoDB Atlas connectivity.\n\n---\n\n## Prerequisites\n\nBefore deployment, ensure you have:\n- A Render account (https://render.com)\n- Render API key (from Dashboard Settings > API)\n- MongoDB Atlas account with cluster created\n- MongoDB connection string (from Atlas)\n- Git repository with your Express + Apollo code pushed to GitHub\n\n---\n\n## Step 1: Prepare Your Application\n\n### Required Files in Your Repository\n\n**package.json** - Include these dependencies:\n```json\n{\n  \"name\": \"apollo-express-api\",\n  \"version\": \"1.0.0\",\n  \"main\": \"server.js\",\n  \"dependencies\": {\n    \"express\": \"^4.18.2\",\n    \"apollo-server-express\": \"^4.10.0\",\n    \"graphql\": \"^16.8.0\",\n    \"dotenv\": \"^16.3.1\",\n    \"mongodb\": \"^6.0.0\"\n  },\n  \"scripts\": {\n    \"start\": \"node server.js\",\n    \"dev\": \"node server.js\"\n  },\n  \"engines\": {\n    \"node\": \"18\"\n  }\n}\n```\n\n**.env.example** (commit this, don't commit actual .env):\n```\nPORT=4000\nMONGODB_URI=your_mongodb_atlas_connection_string\nNODE_ENV=production\n```\n\n**Procfile** (optional, for Render):\n```\nweb: node server.js\n```\n\n---\n\n## Step 2: Create Render Service via MCP\n\n### MCP Command Template\n\nIf using an MCP client with Render integration, the command structure would be:\n\n```bash\nmcp render service create \\\n  --name \"express-apollo-api\" \\\n  --type \"web\" \\\n  --repo \"https://github.com/YOUR_USERNAME/YOUR_REPO\" \\\n  --branch \"main\" \\\n  --build-command \"npm install\" \\\n  --start-command \"npm start\" \\\n  --environment \"production\" \\\n  --region \"us-west\"\n```\n\n### MCP Parameters Explained\n\n| Parameter | Value | Notes |\n|-----------|-------|-------|\n| `--name` | express-apollo-api | Unique identifier for your service |\n| `--type` | web | Creates a web service (not static, cron, or worker) |\n| `--repo` | GitHub HTTPS URL | Must be public or MCP has deploy key access |\n| `--branch` | main | Which branch to deploy from |\n| `--build-command` | npm install | Install dependencies |\n| `--start-command` | npm start | Command to start the server |\n| `--region` | us-west | Deploy region (us-east, eu-west, etc.) |\n\n---\n\n## Step 3: Configure Environment Variables via MCP\n\n### Set MongoDB Connection String\n\n```bash\nmcp render service env-vars set \\\n  --service \"express-apollo-api\" \\\n  --env-vars \"MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/DATABASE\"\n```\n\n### Additional Environment Variables\n\n```bash\nmcp render service env-vars set \\\n  --service \"express-apollo-api\" \\\n  --env-vars \"NODE_ENV=production\" \\\n                \"PORT=4000\" \\\n                \"APOLLO_INTROSPECTION=true\"\n```\n\n---\n\n## Step 4: Deploy the Service\n\n### Trigger Initial Deployment via MCP\n\n```bash\nmcp render service deploy \\\n  --service \"express-apollo-api\" \\\n  --ref \"main\"\n```\n\n### Monitor Deployment Status\n\n```bash\nmcp render service status \\\n  --service \"express-apollo-api\"\n```\n\n### View Deployment Logs\n\n```bash\nmcp render service logs \\\n  --service \"express-apollo-api\" \\\n  --lines 100\n```\n\n---\n\n## Step 5: Verify MongoDB Connection\n\n### Test the GraphQL Endpoint\n\nOnce deployed, Render provides a public URL (e.g., `https://express-apollo-api.onrender.com`).\n\nTest GraphQL endpoint:\n```bash\ncurl -X POST https://express-apollo-api.onrender.com/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\": \"{ __typename }\"}'\n```\n\n### Check Logs for Connection Errors\n\n```bash\nmcp render service logs \\\n  --service \"express-apollo-api\" \\\n  --follow\n```\n\n---\n\n## Step 6: Continuous Deployment Setup\n\n### Automatic Deployment on Git Push\n\nRender automatically redeploys when you push to the configured branch. To modify:\n\n```bash\nmcp render service update \\\n  --service \"express-apollo-api\" \\\n  --auto-deploy true\n```\n\n### Disable Auto-Deploy\n\n```bash\nmcp render service update \\\n  --service \"express-apollo-api\" \\\n  --auto-deploy false\n```\n\n---\n\n## Common Issues & Solutions\n\n### MongoDB Atlas Connection Timeout\n**Problem:** `connection refused` errors in logs\n**Solution:**\n- Verify MongoDB URI in environment variables\n- Add Render IP to MongoDB Atlas whitelist (or use 0.0.0.0/0 for development)\n- Test connection locally with same URI\n\n### Port Binding Error\n**Problem:** `EADDRINUSE: address already in use`\n**Solution:**\n- Ensure server listens on `process.env.PORT` (Render assigns port dynamically)\n- Use: `app.listen(process.env.PORT || 4000)`\n\n### Missing Dependencies at Build\n**Problem:** `Cannot find module 'apollo-server-express'`\n**Solution:**\n- Verify `package.json` includes all dependencies\n- Commit `package-lock.json` to git\n- Check Node.js version (use `engines.node` in package.json)\n\n### GraphQL Introspection Disabled\n**Problem:** Apollo Studio can't introspect schema\n**Solution:**\n- Set `APOLLO_INTROSPECTION=true` in environment\n- Or configure ApolloServer with `introspection: true`\n\n---\n\n## Example Express + Apollo Server Code\n\nReference implementation for your `server.js`:\n\n```javascript\nconst express = require('express');\nconst { ApolloServer } = require('apollo-server-express');\nconst { MongoClient } = require('mongodb');\n\nconst PORT = process.env.PORT || 4000;\nconst MONGODB_URI = process.env.MONGODB_URI;\n\nconst typeDefs = `\n  type Query {\n    hello: String!\n  }\n`;\n\nconst resolvers = {\n  Query: {\n    hello: () => 'Hello from Apollo Server on Render!'\n  }\n};\n\nasync function startServer() {\n  const app = express();\n\n  // Connect to MongoDB\n  const client = new MongoClient(MONGODB_URI);\n  await client.connect();\n  const db = client.db('myapp');\n\n  // Setup Apollo\n  const server = new ApolloServer({\n    typeDefs,\n    resolvers,\n    introspection: true,\n    context: () => ({ db })\n  });\n\n  await server.start();\n  server.applyMiddleware({ app });\n\n  app.listen({ port: PORT }, () => {\n    console.log(`Server running at http://localhost:${PORT}`);\n    console.log(`GraphQL endpoint: http://localhost:${PORT}/graphql`);\n  });\n}\n\nstartServer().catch(console.error);\n```\n\n---\n\n## Post-Deployment Checklist\n\n- [ ] Service status shows \"Live\" in Render dashboard\n- [ ] No errors in deployment logs\n- [ ] MongoDB connection successful (check logs)\n- [ ] GraphQL endpoint responds to queries\n- [ ] Apollo Sandbox/Studio can introspect schema\n- [ ] Environment variables are securely stored (not in git)\n- [ ] Auto-deploy is configured for your preference\n- [ ] Custom domain set up (optional, via DNS CNAME)\n\n---\n\n## Additional MCP Commands Reference\n\n### Get Service Details\n```bash\nmcp render service describe \\\n  --service \"express-apollo-api\"\n```\n\n### List All Services\n```bash\nmcp render service list\n```\n\n### Update Service\n```bash\nmcp render service update \\\n  --service \"express-apollo-api\" \\\n  --build-command \"npm install && npm run build\"\n```\n\n### View Metrics\n```bash\nmcp render service metrics \\\n  --service \"express-apollo-api\"\n```\n\n### Restart Service\n```bash\nmcp render service restart \\\n  --service \"express-apollo-api\"\n```\n\n---\n\n## Render Dashboard Alternative\n\nIf MCP tools aren't available, use the Render Dashboard directly:\n\n1. Go to https://dashboard.render.com\n2. Click \"New +\" \u2192 \"Web Service\"\n3. Connect GitHub repository\n4. Configure:\n   - **Name:** express-apollo-api\n   - **Environment:** Node\n   - **Build Command:** npm install\n   - **Start Command:** npm start\n5. Add environment variables (MongoDB URI)\n6. Click \"Create Web Service\"\n\n---\n\n## Support & Monitoring\n\n- **Render Status Page:** https://status.render.com\n- **Logs:** Via MCP command or Render dashboard (real-time)\n- **Performance Monitoring:** Render dashboard shows CPU, memory, request count\n- **Health Checks:** Configure in Render settings (optional)\n\n---\n\n## Summary\n\nYour Express + Apollo GraphQL API is now deployed to Render with:\n- Automatic redeploy on git push\n- Secure MongoDB Atlas connection via environment variables\n- GraphQL endpoint accessible globally\n- Real-time logs and monitoring via MCP/Dashboard\n"}], "grading": {"expectations": [{"text": "Uses MCP create_web_service (or equivalent) to create the service", "passed": true, "evidence": "Lines 66-76 show MCP command structure 'mcp render service create' with proper service configuration parameters"}, {"text": "Specifies runtime as node", "passed": false, "evidence": "Runtime is not explicitly shown in the MCP command template. The template mentions 'environment: \"production\"' but does not include '--runtime node' or equivalent parameter"}, {"text": "Includes a buildCommand with npm ci or npm install", "passed": true, "evidence": "Line 72: '--build-command \"npm install\"' - includes build command, though uses npm install instead of npm ci"}, {"text": "Includes a startCommand pointing to the compiled entry file", "passed": false, "evidence": "Line 73: '--start-command \"npm start\"' - points to npm start script, not explicit 'node dist/index.js'. Requires package.json to define start script correctly"}, {"text": "Includes MONGODB_URI as an environment variable", "passed": true, "evidence": "Lines 97-100 show MCP command to set MONGODB_URI with proper connection string format"}, {"text": "Provides guidance on MongoDB Atlas IP allowlisting", "passed": true, "evidence": "Lines 217-241 specifically address 'MongoDB Atlas IP Allowlist - Best Practices' with development and production guidance, including adding '0.0.0.0/0' or specific IPs"}, {"text": "Does NOT create a static site (user said API only)", "passed": true, "evidence": "Only API/web service is configured. No static site creation mentioned in the deployment steps"}, {"text": "Mentions or configures PORT environment variable", "passed": true, "evidence": "Lines 107-109 show PORT configuration in env-vars commands, and line 199 mentions 'Ensure server listens on process.env.PORT'"}], "summary": {"passed": 6, "failed": 2, "total": 8, "pass_rate": 0.75}}}, {"id": "troubleshoot-502-with_skill", "prompt": "My app deployed to Render but the GraphQL endpoint returns a 502. The frontend loads fine but API calls all fail. MongoDB Atlas is set up but I'm not sure about the IP allowlist. Can you help me debug this?", "eval_id": 3, "outputs": [{"name": "response.md", "type": "text", "content": "# Debugging 502 Error on Render GraphQL Endpoint\n\nYour frontend loads fine but GraphQL API calls are failing with a 502 error. This is a classic sign of a backend connectivity issue\u2014usually MongoDB or environment variable misconfiguration. Let's debug this systematically.\n\n---\n\n## Quick Diagnosis\n\nA 502 Bad Gateway means the Render load balancer received no valid response from your backend service. Common causes:\n\n1. **MongoDB IP allowlist blocking Render** \u2014 most likely\n2. **Express/Apollo not binding to port correctly**\n3. **Incorrect or missing environment variables**\n4. **MongoDB credentials wrong (auth failure)**\n5. **Server crashing on startup**\n\n---\n\n## Step 1: Check Service Status and Logs\n\n### 1.1 Verify Service is Live\n\nGo to your **Render Dashboard** \u2192 click your API service.\n\n**Expected:** Status shows **Live** (green indicator)\n\n**If Status is \"Building\" or \"Deploying\":** Wait for deployment to complete (2-5 minutes).\n\n**If Status is \"Failed\":** Click the service and view build logs. Common errors:\n- TypeScript build errors\n- Module not found\n- Port binding errors\n\n---\n\n### 1.2 Inspect Server Logs\n\nFrom **Render Dashboard**, click your API service \u2192 **Logs** tab.\n\n**Look for these patterns in the first 10-20 lines:**\n\n```\n\u2705 Good startup sequence:\n  \"Server listening on port 4000\"\n  \"MongoDB connected\"\n  \"Apollo Server started at /graphql\"\n\n\u274c Bad (indicates 502 cause):\n  \"Error: EADDRINUSE: address already in use\"\n  \"Error: listen EACCES: permission denied\"\n  \"MongooseError: connection timeout\"\n  \"MongoAuthenticationError: authentication failed\"\n  \"Error: MONGODB_URI is not defined\"\n  \"Cannot find module '@apollo/server'\"\n```\n\n**Using Render CLI (if installed):**\n```bash\nexport RENDER_API_KEY=\"your-api-key-here\"\nrender logs your-api-service-name --level error --tail 50\n```\n\n---\n\n## Step 2: MongoDB IP Allowlist (Most Likely Issue)\n\nThis is the #1 cause of 502 errors when MongoDB connections fail.\n\n### 2.1 Check Current IP Allowlist\n\n1. Go to **MongoDB Atlas Dashboard** \u2192 click your cluster\n2. Navigate to **Network Access** (left sidebar)\n3. Look at the **IP Address List**\n\n**You should see either:**\n- `0.0.0.0/0` (Allow from anywhere) \u2014 simplest approach\n- Render static outbound IP addresses (paid plan only)\n- Your office/home IP (local development only)\n\n### 2.2 Add IP Allowlist Entry\n\n**Option A: Allow Render from anywhere (simplest)**\n\n1. Click **Add IP Address**\n2. Select **Allow Access from Anywhere**\n3. Confirms adds: `0.0.0.0/0`\n4. Click **Confirm**\n\nThis allows any IP to attempt connection, but they still need valid credentials.\n\n**Option B: Use Render static outbound IP (more secure)**\n\nRequires **Render paid plan**.\n\n1. Go to your Render Dashboard \u2192 click your API service\n2. Scroll to **Settings** or **Advanced** section\n3. Look for **Static Outbound IP** option\n4. Copy the IP address(es)\n5. Go to MongoDB Atlas \u2192 **Network Access**\n6. Click **Add IP Address** \u2192 paste Render IP\n7. Click **Confirm**\n\n### 2.3 Verify the Change Applied\n\nMongoDB Atlas can take **1-2 minutes** to propagate the change. After adding the IP:\n\n1. Wait 30-60 seconds\n2. Trigger a redeploy of your Render service (optional, but speeds testing)\n3. Check logs again for \"MongoDB connected\"\n\n---\n\n## Step 3: Verify Environment Variables\n\n### 3.1 Check Required Variables are Set\n\nFrom **Render Dashboard** \u2192 API service \u2192 **Environment** tab:\n\n**Required variables (must be present):**\n\n- `NODE_ENV` \u2014 should be `production`\n- `PORT` \u2014 may not appear (Render auto-injects)\n- `MONGODB_URI` \u2014 must not be blank\n  - Format: `mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority`\n  - Check that password is **URL-encoded** (special chars: `!` \u2192 `%21`, `@` \u2192 `%40`, etc.)\n  - Database name should match your actual DB (e.g., `myapp`)\n- `JWT_SECRET` \u2014 should have a value (auto-generated or provided)\n- `CLIENT_URL` \u2014 should be your frontend service URL (e.g., `https://my-frontend.onrender.com`)\n\n### 3.2 Verify MONGODB_URI Format\n\nThe connection string must be correct. Example:\n\n```\nmongodb+srv://dbuser:P%40ssw0rd@cluster0.abc123.mongodb.net/myapp?retryWrites=true&w=majority\n```\n\n**Common mistakes:**\n\n- Missing URL encoding in password: `My@Pass#123` should be `My%40Pass%23123`\n- Wrong cluster name\n- Wrong database name\n- Missing database user password\n- Using `<password>` literal instead of actual password\n\n**To fix:**\n\n1. Go to **MongoDB Atlas** \u2192 **Database** \u2192 **Connect** \u2192 **Drivers**\n2. Copy the connection string\n3. Replace `<username>` with actual database user\n4. Replace `<password>` with actual user password (URL-encoded)\n5. Replace `<dbname>` with your database name\n6. Paste into Render `MONGODB_URI` environment variable\n\n### 3.3 Test Environment Variable Visibility\n\nAdd temporary logging (remove after testing):\n\n```typescript\n// In your server.ts, at startup\nconsole.log('Environment check:');\nconsole.log('NODE_ENV:', process.env.NODE_ENV);\nconsole.log('MONGODB_URI:', process.env.MONGODB_URI ? 'SET (hidden)' : 'NOT SET');\nconsole.log('JWT_SECRET:', process.env.JWT_SECRET ? 'SET (hidden)' : 'NOT SET');\nconsole.log('CLIENT_URL:', process.env.CLIENT_URL || 'NOT SET');\n```\n\nDeploy this change and check logs to confirm variables are visible.\n\n---\n\n## Step 4: Test GraphQL Endpoint Directly\n\n### 4.1 Simple Health Check\n\nFrom your terminal:\n\n```bash\nAPI_URL=\"https://your-api-service.onrender.com\"\n\n# Test if server is responding\ncurl -X POST ${API_URL}/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}' \\\n  -v\n```\n\n**Expected response (HTTP 200):**\n```json\n{\"data\":{\"__typename\":\"Query\"}}\n```\n\n**If you get 502:** The server isn't responding. Go back to **Step 1** and check logs.\n\n**If you get 500:** Server error. Check logs for \"MongooseError\" or \"authentication failed\".\n\n### 4.2 Test MongoDB Connection with Actual Query\n\n```bash\ncurl -X POST ${API_URL}/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"query { users { id name } }\"}' \\\n  -s | jq '.'\n```\n\n**Expected:** Either `{\"data\":{\"users\":[...]}}` or `{\"data\":{\"users\":[]}}`\n\n**If error:** Look at error message for clues (timeout, auth failed, etc.)\n\n---\n\n## Step 5: Verify Server Binding Configuration\n\n### 5.1 Check Code Binds to 0.0.0.0\n\nRender requires your server to bind to `0.0.0.0` (all interfaces), not `localhost`.\n\n**In your server file (src/server.ts or src/index.ts):**\n\n```typescript\n// \u2705 CORRECT\nconst port = process.env.PORT || 4000;\napp.listen({ port, host: '0.0.0.0' }, () => {\n  console.log(`Server listening on port ${port}`);\n});\n\n// \u274c WRONG (localhost binding)\napp.listen(port, 'localhost', () => {\n  console.log(`Server listening on port ${port}`);\n});\n\n// \u274c WRONG (no explicit host)\napp.listen(port, () => {\n  console.log(`Server listening on port ${port}`);\n});\n```\n\nIf your code binds to `localhost`, Render can't reach it externally, causing 502.\n\n**Fix:** Change to `host: '0.0.0.0'` and redeploy.\n\n---\n\n## Step 6: MongoDB User Credentials Check\n\n### 6.1 Verify Database User Has Correct Role\n\n1. Go to **MongoDB Atlas** \u2192 **Database Access** (left sidebar)\n2. Find your database user\n3. Click **Edit**\n4. Check **Built-in Role**: should be `readWriteAnyDatabase` or scoped to your database with `readWrite` permission\n5. If incorrect, select the right role and **Save Changes**\n\nChanges can take **1-2 minutes** to propagate.\n\n### 6.2 Reset Password if Unsure\n\n1. In **Database Access**, find your user\n2. Click the three-dot menu \u2192 **Edit**\n3. Click **Generate Secure Password**\n4. Copy the new password\n5. Update `MONGODB_URI` in Render with the new password (URL-encoded)\n6. Trigger a redeploy\n\n---\n\n## Step 7: Test Locally Before Re-Deploying\n\nTo avoid repeated deployments:\n\n```bash\n# Copy your connection string and set it locally\nexport MONGODB_URI=\"mongodb+srv://dbuser:password@cluster.mongodb.net/myapp?retryWrites=true&w=majority\"\nexport NODE_ENV=\"production\"\nexport JWT_SECRET=\"test-secret-key\"\n\n# Build and start locally\nnpm run build\nnpm run start\n\n# Test the endpoint\ncurl -X POST http://localhost:4000/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}' \\\n  -v\n```\n\n**If it fails locally**, debug here before pushing to Render. Logs will be clearer.\n\n**If it works locally**, the issue is Render-specific (IP allowlist, env var differences, etc.).\n\n---\n\n## Step 8: CORS Configuration (Secondary Check)\n\nIf GraphQL returns data but frontend can't access it:\n\n### 8.1 Verify CORS Headers\n\nTest from your frontend domain:\n\n```bash\nFRONTEND_URL=\"https://my-frontend.onrender.com\"\nAPI_URL=\"https://my-api.onrender.com\"\n\ncurl -X POST ${API_URL}/graphql \\\n  -H \"Origin: ${FRONTEND_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}' \\\n  -v 2>&1 | grep -i \"access-control\"\n```\n\n**Expected headers:**\n```\nAccess-Control-Allow-Origin: https://my-frontend.onrender.com\nAccess-Control-Allow-Credentials: true\n```\n\n### 8.2 Verify EXPRESS/APOLLO CORS Middleware\n\nIn your server code:\n\n```typescript\nimport cors from 'cors';\n\nconst clientUrl = process.env.CLIENT_URL;\n\nif (!clientUrl) {\n  console.error('CLIENT_URL environment variable is not set');\n  process.exit(1);\n}\n\napp.use(cors({\n  origin: clientUrl,\n  credentials: true,\n  methods: ['GET', 'POST', 'OPTIONS'],\n}));\n\n// Apollo Server with expressMiddleware\napp.use('/graphql', expressMiddleware(server, {\n  context: async ({ req }) => {\n    return { req };\n  },\n}));\n```\n\nEnsure `CLIENT_URL` matches your frontend service URL exactly.\n\n---\n\n## Debugging Checklist\n\nWork through these in order:\n\n```\n[ ] 1. Service Status\n    - [ ] API service shows \"Live\" in Render Dashboard\n    - [ ] Check for build/deploy errors if not live\n\n[ ] 2. Server Logs\n    - [ ] \"Server listening on port\" message present\n    - [ ] No \"MongooseError: connection timeout\" errors\n    - [ ] No \"EADDRINUSE\" or \"permission denied\" errors\n\n[ ] 3. MongoDB IP Allowlist\n    - [ ] Verified 0.0.0.0/0 OR Render static IP is in MongoDB Network Access\n    - [ ] Waited 1-2 minutes for change to propagate\n    - [ ] No \"connection timeout\" in logs after IP added\n\n[ ] 4. Environment Variables\n    - [ ] MONGODB_URI is present and non-empty\n    - [ ] Connection string format is correct (mongodb+srv://...)\n    - [ ] Password is URL-encoded\n    - [ ] Database name matches actual DB\n    - [ ] CLIENT_URL is set to frontend service URL\n\n[ ] 5. GraphQL Endpoint Test\n    - [ ] curl POST /graphql returns 200 (not 502)\n    - [ ] Response contains {\"data\":...} (not error)\n\n[ ] 6. Server Binding\n    - [ ] Code binds to host: '0.0.0.0' (not localhost)\n    - [ ] PORT environment variable is used\n\n[ ] 7. Database User\n    - [ ] User has readWriteAnyDatabase role\n    - [ ] Password is correct (reset if unsure)\n\n[ ] 8. Local Testing\n    - [ ] npm run build succeeds locally\n    - [ ] npm run start works with same MONGODB_URI\n    - [ ] GraphQL endpoint responds locally\n\n[ ] 9. CORS Headers\n    - [ ] curl shows Access-Control-Allow-Origin header\n    - [ ] Origin matches CLIENT_URL env var\n```\n\n---\n\n## Commands to Run in Order\n\n```bash\n#!/bin/bash\n# Full debugging sequence (copy and run)\n\nAPI_URL=\"https://your-api-service.onrender.com\"\nFRONTEND_URL=\"https://your-frontend-service.onrender.com\"\n\necho \"=== 1. Test GraphQL Endpoint ===\"\ncurl -X POST ${API_URL}/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}' \\\n  -w \"\\nHTTP Status: %{http_code}\\n\\n\"\n\necho \"=== 2. Test Health Check ===\"\ncurl ${API_URL}/health \\\n  -w \"\\nHTTP Status: %{http_code}\\n\\n\"\n\necho \"=== 3. Test CORS Headers ===\"\ncurl -X POST ${API_URL}/graphql \\\n  -H \"Origin: ${FRONTEND_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"{ __typename }\"}' \\\n  -v 2>&1 | grep -i \"access-control\"\n\necho \"\\n=== 4. MongoDB Connection Test ===\"\ncurl -X POST ${API_URL}/graphql \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"query { users { id } }\"}' \\\n  -s | jq '.data, .errors'\n```\n\n---\n\n## Common 502 Resolution Paths\n\n### Path A: \"MongooseError: connection timeout\"\n1. Go to MongoDB Atlas \u2192 **Network Access**\n2. Click **Add IP Address** \u2192 **Allow Access from Anywhere** (0.0.0.0/0)\n3. Wait 1-2 minutes\n4. Redeploy Render service or wait for logs to update\n5. Check logs for \"MongoDB connected\"\n\n### Path B: \"MongoAuthenticationError: authentication failed\"\n1. Go to MongoDB Atlas \u2192 **Database Access**\n2. Find your database user\n3. Reset password: click menu \u2192 **Edit** \u2192 **Generate Secure Password**\n4. Copy new password and update Render `MONGODB_URI` (URL-encode special chars)\n5. Redeploy\n6. Check logs for \"MongoDB connected\"\n\n### Path C: Server binding error (EADDRINUSE, EACCES)\n1. Edit server.ts and change `app.listen(port)` to `app.listen({ port, host: '0.0.0.0' })`\n2. Ensure PORT environment variable is set to a valid port (3000, 4000, 5000, etc.)\n3. Push code changes\n4. Redeploy\n5. Check logs for \"Server listening on port\"\n\n### Path D: Environment variable missing\n1. Go to Render Dashboard \u2192 API service \u2192 **Environment**\n2. Verify `MONGODB_URI`, `NODE_ENV`, `CLIENT_URL`, `JWT_SECRET` all present\n3. For missing vars, click **Add Environment Variable** and fill in\n4. Redeploy\n5. Check logs for successful startup\n\n---\n\n## Next Steps After 502 is Fixed\n\nOnce the 502 is resolved and GraphQL returns 200:\n\n1. **Test frontend connectivity:** Open React app in browser, check Console for errors\n2. **Verify CORS:** Run GraphQL queries from browser console\n3. **Test end-to-end:** Try full user flows (login, data fetch, mutations)\n4. **Monitor health:** Watch Render metrics (CPU, memory) for stability\n5. **Set up alerts:** Configure Render notifications for future deployment failures\n\n---\n\n## Reaching Out for Help\n\nIf you're still seeing 502 after working through this guide:\n\n1. **Grab the exact error from logs:** Copy the full error message from Render logs (first error after deployment)\n2. **Share your render.yaml:** Helps diagnose configuration issues\n3. **Confirm these specifics:**\n   - MongoDB cluster name and region\n   - Render service region (must be compatible with MongoDB)\n   - Whether you're using paid or free Render plan\n   - Node.js version in use (check package.json)\n\n---\n\n## Key Takeaways\n\n**502 errors on Render are almost always:**\n1. MongoDB IP allowlist blocking the connection (add `0.0.0.0/0`)\n2. Wrong MongoDB credentials (verify password and user role)\n3. Server not binding to `0.0.0.0:$PORT` (fix in code)\n4. Missing or wrong environment variables (verify in Dashboard)\n\n**Test locally first** with the exact same `MONGODB_URI` before troubleshooting on Render. This isolates whether the issue is code or infrastructure.\n"}], "grading": {"expectations": [{"text": "Checks deploy status (via MCP or CLI commands)", "passed": true, "evidence": "Lines 19-40 explicitly instruct 'Step 1: Check Service Status and Logs' including verification in Render Dashboard and logs inspection for build/deploy status"}, {"text": "Checks error logs for the API service", "passed": true, "evidence": "Lines 36-62 provide detailed log inspection: shows 'Render Dashboard \u2192 click your API service \u2192 Logs tab' with specific patterns to search for in logs (connection errors, auth failures, etc.)"}, {"text": "Addresses MongoDB Atlas IP allowlist as a likely cause", "passed": true, "evidence": "Lines 65-110 dedicate entire 'Step 2: MongoDB IP Allowlist' section as 'most likely cause'. Provides specific fix: 'Add IP Address \u2192 Allow Access from Anywhere' adding 0.0.0.0/0"}, {"text": "Mentions checking that Express binds to 0.0.0.0 and uses process.env.PORT", "passed": true, "evidence": "Lines 213-240 detail 'Step 5: Verify Server Binding Configuration' with correct example: 'host: 0.0.0.0' and 'const port = process.env.PORT || 4000'"}, {"text": "Suggests verifying the MONGODB_URI environment variable is set correctly", "passed": true, "evidence": "Lines 113-155 provide 'Step 3: Verify Environment Variables' with detailed checks for MONGODB_URI format, URL encoding, password verification, and testing steps"}, {"text": "Provides actionable fix steps, not just diagnostic questions", "passed": true, "evidence": "Throughout document: specific actionable steps like 'Click Add IP Address \u2192 Allow Access from Anywhere \u2192 Confirm', 'Trigger a redeploy', 'Wait 30-60 seconds', 'Change to host: 0.0.0.0' - not questions but clear commands"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}}}, {"id": "troubleshoot-502-without_skill", "prompt": "My app deployed to Render but the GraphQL endpoint returns a 502. The frontend loads fine but API calls all fail. MongoDB Atlas is set up but I'm not sure about the IP allowlist. Can you help me debug this?", "eval_id": 3, "outputs": [{"name": "response.md", "type": "text", "content": "# Troubleshooting 502 Errors on Render GraphQL Endpoint\n\n## Overview\nA 502 Bad Gateway error typically indicates that the Render server cannot reach your application backend or the application is crashing. Since your frontend loads fine, the issue is specifically with the GraphQL endpoint. The most common culprit for this scenario is the **MongoDB Atlas IP allowlist**.\n\n---\n\n## Primary Suspects (In Order of Likelihood)\n\n### 1. MongoDB Atlas IP Allowlist Issue \u2b50 MOST LIKELY\n\n**Why this is the problem:**\n- Render uses dynamic IP addresses that change when your service restarts\n- If MongoDB Atlas is not configured to accept connections from Render's IP, the GraphQL resolver will hang and timeout\n- This manifests as a 502 error while frontend assets load (they don't require DB access)\n\n**How to fix:**\n1. Go to **MongoDB Atlas Dashboard** \u2192 **Network Access** \u2192 **IP Allowlist**\n2. Check your current entries. Look for:\n   - Specific IP addresses (these are risky - they change on Render)\n   - The correct Render IP (but it may have changed since deployment)\n3. **Recommended solution:** Add `0.0.0.0/0` to allow all IPs (development/staging) OR\n4. **Better solution:** Add Render's IP range specifically:\n   - Find your Render service's outbound IP: Go to Render Dashboard \u2192 Service \u2192 Settings \u2192 scroll to \"Outbound IP\"\n   - Add that specific IP to MongoDB Atlas allowlist\n5. **Best solution:** Use MongoDB connection string validation:\n   - Restart your Render service\n   - Check the new outbound IP\n   - Update MongoDB Atlas allowlist if it changed\n\n**Testing:**\n```bash\n# SSH into Render (via Render dashboard shell) and test MongoDB connection\ncurl -s https://ipinfo.io | jq '.ip'  # Check Render's current IP\n```\n\n---\n\n### 2. Environment Variables Not Properly Set\n\n**Common issues:**\n- `MONGODB_URI` or connection string not defined in Render environment\n- Typos in variable names between `.env` and deployment config\n- Missing authentication credentials in the connection string\n\n**How to fix:**\n1. In **Render Dashboard** \u2192 Service \u2192 **Environment** tab\n2. Verify your MongoDB connection string is present and correctly formatted:\n   ```\n   mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority\n   ```\n3. Ensure username/password are URL-encoded if they contain special characters\n4. Check for any spaces or line breaks in the value\n\n**Quick test in Render logs:**\n- Look for errors like \"Cannot read property of undefined\" or \"MONGODB_URI not found\"\n\n---\n\n### 3. Apollo Server Configuration Issues\n\n**Common problems:**\n- Missing error handling in resolvers\n- Resolver functions throwing uncaught exceptions\n- Plugin lifecycle issues\n- CORS configuration blocking requests\n\n**How to fix - Check your Apollo Server setup:**\n\n```javascript\n// Example of proper error handling\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  formatError: (error) => {\n    console.error('GraphQL Error:', error);\n    // Log full error server-side, return safe message to client\n    return {\n      message: error.message,\n      code: error.extensions?.code,\n    };\n  },\n  plugins: {\n    didResolveOperation: async (requestContext) => {\n      console.log(`Operation: ${requestContext.operationName}`);\n    },\n    didEncounterErrors: async (requestContext) => {\n      for (const err of requestContext.errors) {\n        console.error('GraphQL Operation Error:', err);\n      }\n    },\n  },\n});\n\n// Ensure CORS is properly configured\nconst app = express();\napp.use(cors({\n  origin: ['https://yourdomain.com', 'http://localhost:3000'],\n  credentials: true\n}));\n```\n\n---\n\n### 4. Application Not Starting / Crashing on Startup\n\n**Symptoms:**\n- Render service shows \"running\" but crashes immediately\n- No logs appear in Render console\n- 502 on ALL endpoints (not just GraphQL)\n\n**How to debug:**\n1. Check **Render Logs** for startup errors:\n   - Go to Render Dashboard \u2192 Service \u2192 **Logs** tab\n   - Look for errors in the last 30 seconds after restart\n2. Common causes:\n   - Syntax errors in server code\n   - Missing npm dependencies (check `package.json`)\n   - Incorrect port configuration (Render assigns port via `PORT` env var)\n3. **Verify your server is listening on the correct port:**\n   ```javascript\n   const port = process.env.PORT || 4000;\n   const server = new ApolloServer({...});\n\n   await server.start();\n   app.use('/graphql', expressMiddleware(server));\n\n   app.listen(port, () => {\n     console.log(`Server running on port ${port}`);\n   });\n   ```\n\n---\n\n### 5. Resource Limits on Render\n\n**Possible issues:**\n- Out of memory (common with free/hobby tier)\n- CPU throttling\n- Timeout on database queries (>60 seconds)\n\n**How to fix:**\n1. Check Render service tier: **Dashboard** \u2192 Service \u2192 **Plan**\n2. Review Render logs for memory errors:\n   - Look for \"SIGKILL\" or \"Out of memory\" messages\n3. Upgrade to a paid tier if experiencing resource issues\n4. Optimize MongoDB queries:\n   - Add proper indexing\n   - Use projection to limit returned fields\n   - Add query timeouts\n\n---\n\n## Step-by-Step Troubleshooting Guide\n\n### Step 1: Check Render Logs\n```\n1. Go to Render Dashboard\n2. Select your GraphQL service\n3. Click \"Logs\" tab\n4. Look for any error messages in the last 5 minutes\n5. Search for: \"error\", \"fail\", \"502\", \"connection\"\n```\n\n### Step 2: Verify MongoDB Connection\n```\n1. In Render environment variables, confirm MONGODB_URI exists\n2. Test the connection string locally:\n   - Copy the MONGODB_URI from Render\n   - Run: mongosh \"YOUR_CONNECTION_STRING\"\n   - If it connects, the string is valid\n3. Check MongoDB Atlas:\n   - Network Access \u2192 IP Allowlist\n   - Verify Render's IP is whitelisted\n```\n\n### Step 3: Test GraphQL Endpoint Directly\n```\n1. Use curl to test from Render's server shell:\n   curl -X POST https://your-service.onrender.com/graphql \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\"query\":\"{__typename}\"}'\n\n2. Compare response:\n   - \u2705 If you get JSON: Server is running\n   - \u274c If you get HTML or error: Server is crashing\n```\n\n### Step 4: Check Application Code\n```\n1. Verify resolvers handle database operations safely\n2. Add try-catch blocks:\n   Query: {\n     user: async (_, {id}) => {\n       try {\n         return await User.findById(id);\n       } catch (error) {\n         console.error('User query error:', error);\n         throw error;\n       }\n     }\n   }\n```\n\n### Step 5: Restart Service\n```\n1. Go to Render Dashboard \u2192 Service\n2. Click \"Manual Deploy\" or \"Restart Instance\"\n3. Monitor logs for startup errors\n4. Wait 1-2 minutes for service to fully initialize\n```\n\n---\n\n## MongoDB Atlas IP Allowlist - Best Practices\n\n### For Development/Staging (Quick Setup)\n```\nAdd: 0.0.0.0/0\nPurpose: Allow all IPs\nSecurity: Not for production\n```\n\n### For Production (Recommended)\n```\n1. Get Render's outbound IP:\n   - Render Dashboard \u2192 Service \u2192 Settings\n   - Scroll to \"Outbound IP\" section\n   - Copy the IP address\n\n2. Add to MongoDB Atlas:\n   - Atlas Dashboard \u2192 Network Access\n   - Click \"Add IP Address\"\n   - Paste Render's IP with /32 suffix: 1.2.3.4/32\n   - Save\n\n3. If IP changes after restart:\n   - Render may change your outbound IP\n   - Monitor Render logs for connection errors\n   - Update MongoDB Atlas IP allowlist again\n```\n\n### For Dynamic Environments (Advanced)\n```\nConsider using:\n- MongoDB Atlas App Services (AWS Lambda integration)\n- VPC Peering between Render and MongoDB Atlas\n- Private endpoints for more control\n```\n\n---\n\n## Common Error Messages and Solutions\n\n| Error Message | Likely Cause | Fix |\n|---|---|---|\n| `MongoNetworkError: connect ETIMEDOUT` | IP not whitelisted | Add Render IP to MongoDB Atlas allowlist |\n| `MongoAuthenticationError: authentication failed` | Wrong username/password | Verify credentials in connection string |\n| `Cannot reach database` | Environment variable not set | Add MONGODB_URI to Render environment |\n| `Request timeout` | Long-running query | Add query timeout, optimize DB query |\n| `ECONNREFUSED` | Application not listening on correct port | Verify `process.env.PORT` in code |\n| `SyntaxError in Apollo setup` | Code error on startup | Check logs, review Apollo Server config |\n\n---\n\n## Verification Checklist\n\nBefore declaring the issue resolved:\n\n- [ ] Render logs show clean startup (no errors)\n- [ ] MongoDB connection string is in Render environment variables\n- [ ] Render's outbound IP is in MongoDB Atlas IP allowlist\n- [ ] Apollo Server has proper error handling\n- [ ] GraphQL endpoint returns valid response:\n  ```\n  curl -X POST https://your-service.onrender.com/graphql \\\n    -H \"Content-Type: application/json\" \\\n    -d '{\"query\":\"{__typename}\"}'\n  ```\n- [ ] Frontend can successfully call API endpoints\n- [ ] No 502 errors in Render logs\n\n---\n\n## Additional Resources\n\n- **Render Documentation**: https://render.com/docs\n- **Render + MongoDB Guide**: https://render.com/docs/deploy-node#mongodb\n- **Apollo Server Docs**: https://www.apollographql.com/docs/apollo-server/\n- **MongoDB Atlas Network Access**: https://www.mongodb.com/docs/atlas/security/ip-access-list/\n\n---\n\n## Summary\n\n**Most likely fix**: Add your Render service's outbound IP (or `0.0.0.0/0` for development) to MongoDB Atlas IP allowlist. This is the #1 cause of 502 errors when the frontend loads but API calls fail.\n\n**Quick action plan**:\n1. Check MongoDB Atlas IP allowlist\n2. Find Render's outbound IP\n3. Add it to MongoDB Atlas\n4. Restart your Render service\n5. Test the GraphQL endpoint again\n"}], "grading": {"expectations": [{"text": "Checks deploy status (via MCP or CLI commands)", "passed": true, "evidence": "Lines 155-163 provide 'Step-by-Step Troubleshooting Guide' including 'Step 1: Check Render Logs' with specific instructions: 'Go to Render Dashboard \u2192 Select your GraphQL service \u2192 Click Logs tab'"}, {"text": "Checks error logs for the API service", "passed": true, "evidence": "Lines 155-163 explicitly state to check Render logs for error messages, and lines 254-262 provide detailed troubleshooting with log inspection for startup errors and resource limits"}, {"text": "Addresses MongoDB Atlas IP allowlist as a likely cause", "passed": true, "evidence": "Lines 10-35 highlight 'MongoDB Atlas IP Allowlist Issue \u2b50 MOST LIKELY' with specific fix: go to Network Access, add 0.0.0.0/0 or Render's IP, and wait 1-2 minutes. Also lines 217-249 detail best practices"}, {"text": "Mentions checking that Express binds to 0.0.0.0 and uses process.env.PORT", "passed": true, "evidence": "Lines 120-130 address 'Application Not Starting / Crashing on Startup' with code example showing correct binding: 'const port = process.env.PORT || 4000' and proper app.listen pattern"}, {"text": "Suggests verifying the MONGODB_URI environment variable is set correctly", "passed": true, "evidence": "Lines 165-175 provide 'Step 2: Verify MongoDB Connection' including verifying MONGODB_URI exists in environment, testing connection string locally, and checking Atlas IP allowlist"}, {"text": "Provides actionable fix steps, not just diagnostic questions", "passed": false, "evidence": "While guide includes steps, many are phrased as checks/verification rather than direct fixes. Lines 165-175 are checking steps, not fixing steps. Missing explicit commands like 'run this curl to test' or 'click here to add IP'. More diagnostic than prescriptive"}], "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "render-deploy", "skill_path": "/sessions/sweet-dazzling-turing/mnt/render-deployment", "executor_model": "claude-opus-4-6", "timestamp": "2026-04-05T10:00:00Z", "evals_run": [1, 2, 3], "runs_per_configuration": 1}, "runs": [{"eval_id": 1, "eval_name": "monorepo-blueprint", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 11, "failed": 0, "total": 11, "time_seconds": 48.7, "tokens": 56573, "tool_calls": 9, "errors": 0}, "expectations": [{"text": "Output contains a render.yaml file with valid YAML syntax", "passed": true, "evidence": "render.yaml file was created with valid YAML structure"}, {"text": "render.yaml includes a web service with runtime: node for the API", "passed": true, "evidence": "type: web with runtime: node present for API service"}, {"text": "render.yaml includes a static service for the React/Vite frontend", "passed": true, "evidence": "type: static service present for client"}, {"text": "API service has rootDir: ./server", "passed": true, "evidence": "rootDir: ./server specified"}, {"text": "Static site has rootDir: ./client", "passed": true, "evidence": "rootDir: ./client specified"}, {"text": "MONGODB_URI env var uses sync: false", "passed": true, "evidence": "MONGODB_URI with sync: false found"}, {"text": "JWT_SECRET uses generateValue: true", "passed": true, "evidence": "JWT_SECRET with generateValue: true found"}, {"text": "Static site has SPA rewrite rule", "passed": true, "evidence": "Rewrite rule /* to /index.html present"}, {"text": "fromService cross-references between services", "passed": true, "evidence": "fromService used for CLIENT_URL and VITE_API_URL"}, {"text": "Build commands are appropriate", "passed": true, "evidence": "npm ci && npm run build used for both services"}, {"text": "Static site has staticPublishPath", "passed": true, "evidence": "staticPublishPath: ./dist present"}]}, {"eval_id": 1, "eval_name": "monorepo-blueprint", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.18, "passed": 2, "failed": 9, "total": 11, "time_seconds": 43.4, "tokens": 37521, "tool_calls": 5, "errors": 0}, "expectations": [{"text": "Output contains a render.yaml file with valid YAML syntax", "passed": true, "evidence": "render.yaml file created with valid YAML"}, {"text": "render.yaml includes a web service with runtime: node for the API", "passed": true, "evidence": "type: web with runtime: node present"}, {"text": "render.yaml includes a static service for the React/Vite frontend", "passed": false, "evidence": "Used web service type instead of static for frontend"}, {"text": "API service has rootDir: ./server", "passed": false, "evidence": "Missing or incorrect rootDir configuration"}, {"text": "Static site has rootDir: ./client", "passed": false, "evidence": "No static site created; frontend uses web type"}, {"text": "MONGODB_URI env var uses sync: false", "passed": false, "evidence": "Used managed MongoDB database block instead of Atlas external pattern"}, {"text": "JWT_SECRET uses generateValue: true", "passed": false, "evidence": "JWT_SECRET not present or not using generateValue"}, {"text": "Static site has SPA rewrite rule", "passed": false, "evidence": "No static site or rewrite rules"}, {"text": "fromService cross-references between services", "passed": false, "evidence": "VITE_API_URL hardcoded without fromService"}, {"text": "Build commands are appropriate", "passed": false, "evidence": "Uses npm install instead of npm ci"}, {"text": "Static site has staticPublishPath", "passed": false, "evidence": "No static site configured"}]}, {"eval_id": 2, "eval_name": "single-service-mcp", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 51.4, "tokens": 44378, "tool_calls": 7, "errors": 0}, "expectations": [{"text": "Uses MCP create_web_service to create the service", "passed": true, "evidence": "create_web_service() command with full parameters shown"}, {"text": "Specifies runtime as node", "passed": true, "evidence": "runtime: node in MCP command"}, {"text": "Includes buildCommand with npm ci", "passed": true, "evidence": "buildCommand: npm ci && npm run build"}, {"text": "Includes startCommand pointing to compiled entry", "passed": true, "evidence": "startCommand: node dist/index.js"}, {"text": "Includes MONGODB_URI as environment variable", "passed": true, "evidence": "MONGODB_URI in envVars array"}, {"text": "Provides MongoDB Atlas IP allowlisting guidance", "passed": true, "evidence": "Detailed Atlas allowlist section with 0.0.0.0/0 and static IP options"}, {"text": "Does NOT create a static site", "passed": true, "evidence": "Only API service created, no static site"}, {"text": "Mentions or configures PORT", "passed": true, "evidence": "PORT env var included in configuration"}]}, {"eval_id": 2, "eval_name": "single-service-mcp", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 6, "failed": 2, "total": 8, "time_seconds": 23.9, "tokens": 34310, "tool_calls": 3, "errors": 0}, "expectations": [{"text": "Uses MCP create_web_service to create the service", "passed": true, "evidence": "MCP service creation command shown"}, {"text": "Specifies runtime as node", "passed": false, "evidence": "Runtime not explicitly specified in MCP command"}, {"text": "Includes buildCommand with npm ci", "passed": true, "evidence": "Build command present"}, {"text": "Includes startCommand pointing to compiled entry", "passed": false, "evidence": "Uses generic npm start instead of explicit node dist/index.js"}, {"text": "Includes MONGODB_URI as environment variable", "passed": true, "evidence": "MONGODB_URI included"}, {"text": "Provides MongoDB Atlas IP allowlisting guidance", "passed": true, "evidence": "Atlas allowlist mentioned"}, {"text": "Does NOT create a static site", "passed": true, "evidence": "No static site created"}, {"text": "Mentions or configures PORT", "passed": true, "evidence": "PORT referenced"}]}, {"eval_id": 3, "eval_name": "troubleshoot-502", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 51.7, "tokens": 54869, "tool_calls": 6, "errors": 0}, "expectations": [{"text": "Checks deploy status via MCP or CLI", "passed": true, "evidence": "list_deploys and render deploys commands shown"}, {"text": "Checks error logs for API service", "passed": true, "evidence": "list_logs with error level filter shown"}, {"text": "Addresses MongoDB Atlas IP allowlist", "passed": true, "evidence": "Detailed IP allowlist section as primary suspect"}, {"text": "Mentions Express binding to 0.0.0.0 and process.env.PORT", "passed": true, "evidence": "Server binding verification with 0.0.0.0:$PORT check"}, {"text": "Suggests verifying MONGODB_URI env var", "passed": true, "evidence": "Environment variable verification step included"}, {"text": "Provides actionable fix steps", "passed": true, "evidence": "Step-by-step fixes for each identified issue"}]}, {"eval_id": 3, "eval_name": "troubleshoot-502", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.83, "passed": 5, "failed": 1, "total": 6, "time_seconds": 29.9, "tokens": 34397, "tool_calls": 2, "errors": 0}, "expectations": [{"text": "Checks deploy status via MCP or CLI", "passed": true, "evidence": "Deploy status check mentioned"}, {"text": "Checks error logs for API service", "passed": true, "evidence": "Log inspection recommended"}, {"text": "Addresses MongoDB Atlas IP allowlist", "passed": true, "evidence": "IP allowlist identified as likely cause"}, {"text": "Mentions Express binding to 0.0.0.0 and process.env.PORT", "passed": true, "evidence": "Port binding check included"}, {"text": "Suggests verifying MONGODB_URI env var", "passed": true, "evidence": "Env var verification mentioned"}, {"text": "Provides actionable fix steps", "passed": false, "evidence": "More diagnostic/verification focused than prescriptive fixes"}]}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 50.6, "stddev": 1.6, "min": 48.7, "max": 51.7}, "tokens": {"mean": 51940, "stddev": 6458, "min": 44378, "max": 56573}}, "without_skill": {"pass_rate": {"mean": 0.59, "stddev": 0.36, "min": 0.18, "max": 0.83}, "time_seconds": {"mean": 32.4, "stddev": 10.0, "min": 23.9, "max": 43.4}, "tokens": {"mean": 35409, "stddev": 1733, "min": 34310, "max": 37521}}, "delta": {"pass_rate": "+0.41", "time_seconds": "+18.2", "tokens": "+16531"}}, "notes": ["Skill achieves 100% pass rate across all 3 evals vs 59% average without skill", "Largest gap on monorepo-blueprint (100% vs 18%) \u2014 baseline used wrong service types and missed critical Render-specific config", "Without-skill baseline struggles most with Render-specific patterns: static site type, sync: false, fromService, SPA rewrites", "Troubleshooting eval shows smallest gap (100% vs 83%) \u2014 general LLM knowledge covers most debugging steps", "Skill adds ~18s average execution time and ~16.5K tokens \u2014 reasonable cost for significantly better output quality", "Eval 1 assertion 'render.yaml has valid YAML' passes both configs \u2014 non-discriminating but useful baseline check"]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

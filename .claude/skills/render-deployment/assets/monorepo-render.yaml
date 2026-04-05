@@ -1,0 +1,272 @@
+# Render Deployment Configuration — MERN + GraphQL + TypeScript Monorepo
+#
+# This render.yaml configures a complete MERN stack with:
+# - Backend: Express + Apollo Server v4 + Mongoose v8 + GraphQL (./server)
+# - Frontend: React 18 + Vite + Apollo Client + TypeScript (./client)
+# - Database: MongoDB Atlas (external, referenced via MONGODB_URI env var)
+#
+# Services are deployed as two separate services:
+# 1. Web service for the GraphQL API
+# 2. Static site for the React frontend
+#
+# Use this when you want independent scaling, caching, and deployment
+# of frontend and backend. For a simpler single-service approach,
+# see single-service-render.yaml.
+
+services:
+  # =========================================================================
+  # WEB SERVICE: Apollo GraphQL API
+  # =========================================================================
+  # Hosts the Express + Apollo Server backend. Runs on port 4000.
+  # Serves GraphQL queries/mutations to the React frontend.
+  # Configured for TypeScript compilation and production Node.js runtime.
+
+  - type: web
+    name: app-api
+
+    # GitHub repository and branch to deploy from
+    repo: https://github.com/user/repo
+    branch: main
+
+    # Path to server directory relative to repository root
+    # Render installs dependencies and runs build commands from this directory
+    rootDir: ./server
+
+    # Node.js runtime environment
+    runtime: node
+
+    # Build phase: install dependencies and compile TypeScript to JavaScript
+    # The output is placed in ./server/dist (configured in your tsconfig.json)
+    buildCommand: npm ci && npm run build
+
+    # Start phase: run the compiled JavaScript from dist folder
+    # Ensure this path matches your build output directory
+    startCommand: node dist/index.js
+
+    # Plan: free tier is sufficient for development/testing
+    # Upgrade to "starter" or higher for production traffic
+    plan: free
+
+    # Environment variables
+    # These control API behavior, database connection, and CORS settings
+    envVars:
+
+      # Node environment mode (production for Render deployments)
+      - key: NODE_ENV
+        value: production
+
+      # Apollo Server listening port
+      # Render dynamically assigns a port; this is the internal port
+      # Express middleware must listen on process.env.PORT
+      - key: PORT
+        value: "4000"
+
+      # MongoDB Atlas connection string
+      # Format: mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
+      # Sync: false means this value is NOT synced back from Render Dashboard
+      # You manage this value via environment configuration only
+      - key: MONGODB_URI
+        value: mongodb+srv://user:password@cluster.mongodb.net/dbname
+        sync: false
+
+      # JWT secret for token signing and verification
+      # generateValue: true creates a random 32-character secret automatically
+      # This ensures each deployment has a unique secret (tokens are invalidated if redeployed)
+      # For production, consider using a persistent secret from a secrets manager
+      - key: JWT_SECRET
+        generateValue: true
+
+      # CORS allowed origins: comma-separated list of URLs that can access this API
+      # Reference the static site service URL directly using Render's variable substitution
+      # After deployment, update this to include your static site's actual URL
+      # Example: https://app-client.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:3000,https://app-client.onrender.com
+        sync: false
+
+      # Optional: OpenRouter API key for LLM features (if using)
+      # Sync: false means this is managed outside Render's Dashboard
+      - key: OPENROUTER_API_KEY
+        value: ""
+        sync: false
+
+      # Optional: Logging level
+      # Possible values: info, warn, error, debug
+      - key: LOG_LEVEL
+        value: info
+
+      # Optional: Enable Apollo Server introspection (disable in production)
+      # Introspection allows clients to discover schema without documentation
+      - key: APOLLO_INTROSPECTION_ENABLED
+        value: "false"
+
+    # Auto-deploy settings: redeploy whenever code is pushed to the specified branch
+    # Set to false if you prefer manual deployments only
+    autoDeploy: true
+
+  # =========================================================================
+  # STATIC SITE: React + Vite Frontend
+  # =========================================================================
+  # Hosts the React 18 + Vite + Apollo Client frontend.
+  # Serves static files (HTML, JS, CSS) with SPA routing support.
+  # Configured for optimized production builds with TypeScript.
+
+  - type: static_site
+    name: app-client
+
+    # GitHub repository and branch to deploy from
+    repo: https://github.com/user/repo
+    branch: main
+
+    # Path to client directory relative to repository root
+    # Render installs dependencies and runs build commands from this directory
+    rootDir: ./client
+
+    # Build phase: install dependencies and build Vite distribution
+    # Vite optimizes React code, bundles assets, and outputs minified files
+    buildCommand: npm ci && npm run build
+
+    # Directory containing static files to serve (Vite's output directory)
+    # This is the publish/distribution directory created by the build command
+    publishPath: ./dist
+
+    # Environment variables available during build time
+    # Note: Vite prefixes with VITE_ by convention; this variable is embedded at build time
+    envVars:
+
+      # GraphQL API endpoint for Apollo Client
+      # Reference the web service URL after deployment
+      # Apollo Client connects to this URL to fetch GraphQL queries/mutations
+      # Sync: false means this is managed outside Render's Dashboard
+      - key: VITE_API_URL
+        value: https://app-api.onrender.com
+        sync: false
+
+      # Optional: Analytics tracking ID (Google Analytics, Mixpanel, etc.)
+      - key: VITE_ANALYTICS_ID
+        value: ""
+
+      # Optional: Application environment for feature flags
+      - key: VITE_APP_ENV
+        value: production
+
+      # Optional: API timeout (milliseconds) for Apollo Client requests
+      - key: VITE_API_TIMEOUT
+        value: "30000"
+
+    # Routes and rewrites for Single Page Application (SPA) behavior
+    # Without this, direct navigation to routes like /dashboard returns 404
+    # These rules ensure client-side routing works by serving index.html
+    routes:
+
+      # Rewrite all non-file requests to index.html (status 200)
+      # This allows React Router (or your routing library) to handle routes client-side
+      # The glob pattern /* matches all paths except those with file extensions
+      - path: /*
+        destination: /index.html
+        status: 200
+
+      # Note: Static files (js, css, images) are served directly by path
+      # Vite's build output includes hash-based filenames for cache busting
+
+    # Security headers for the static site
+    # These headers prevent common web vulnerabilities and enforce security policies
+    headers:
+
+      # Prevent MIME type sniffing (browser must respect Content-Type header)
+      - path: /*
+        header: X-Content-Type-Options
+        value: nosniff
+
+      # Prevent clickjacking by restricting framing
+      - path: /*
+        header: X-Frame-Options
+        value: SAMEORIGIN
+
+      # Control referrer information sent with requests
+      - path: /*
+        header: Referrer-Policy
+        value: strict-origin-when-cross-origin
+
+      # Enforce Content Security Policy (restrict resource sources)
+      # Adjust 'connect-src' to include your API domain
+      - path: /*
+        header: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://app-api.onrender.com https://*.openrouter.ai; img-src 'self' data: https:;"
+
+      # Encourage HTTPS for future requests
+      - path: /*
+        header: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+
+    # Auto-deploy settings: redeploy whenever code is pushed to the specified branch
+    # Set to false if you prefer manual deployments only
+    autoDeploy: true
+
+# =========================================================================
+# ENVIRONMENT VARIABLES (Shared / Cross-Service)
+# =========================================================================
+# Global variables that apply to all services (optional override per service)
+# Not typically used for MERN; define service-specific vars under each service above
+
+# Note: Environment variables are NOT automatically synced between services.
+# To pass the web service URL to the static site, you must manually:
+# 1. Deploy the web service first
+# 2. Note its URL (e.g., https://app-api.onrender.com)
+# 3. Update VITE_API_URL in the static site environment variables
+
+# =========================================================================
+# MONGODB ATLAS SETUP (External Database)
+# =========================================================================
+# MongoDB Atlas is hosted externally and accessed via connection string.
+#
+# Steps to set up MongoDB Atlas:
+# 1. Create an account at https://www.mongodb.com/cloud/atlas
+# 2. Create a project and cluster
+# 3. Create a database user (e.g., username: "appuser", auto-generate password)
+# 4. Whitelist Render IP addresses:
+#    - Go to Network Access → Add IP Whitelist Entry
+#    - Add IP: 0.0.0.0/0 (allows all IPs; for production, consider restricting)
+# 5. Get the connection string from Cluster → Connect → Drivers
+#    Format: mongodb+srv://user:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
+# 6. Add this string to MONGODB_URI environment variable in the web service
+#
+# Note: Render also offers managed databases, but MongoDB Atlas is free for development
+
+# =========================================================================
+# DEPLOYMENT NOTES
+# =========================================================================
+#
+# Deploy Process:
+# 1. Commit and push code to the specified GitHub branch (main)
+# 2. Render detects the push (if autoDeploy: true)
+# 3. For each service:
+#    a. Check out code from the branch
+#    b. Run buildCommand in the specified rootDir
+#    c. Run startCommand (web service) or serve static files (static site)
+#    d. Allocate a Render URL (e.g., https://app-api.onrender.com)
+#
+# Accessing Services After Deployment:
+# - Web Service: https://app-api.onrender.com/graphql
+# - Static Site: https://app-client.onrender.com
+# - GraphQL Playground: https://app-api.onrender.com/graphql (if enabled)
+#
+# Common Issues:
+# - "Build failed": Check buildCommand syntax; verify dependencies in package.json
+# - "Cannot find module": Ensure rootDir is correct and package.json exists there
+# - "Port already in use": Render assigns PORT dynamically; ensure code reads process.env.PORT
+# - "Static site returns 404 for routes": Add SPA rewrite rule (see routes section above)
+# - "CORS errors": Update ALLOWED_ORIGINS to include static site URL
+# - "API not reachable from frontend": Ensure VITE_API_URL matches the deployed web service URL
+#
+# Scaling & Performance:
+# - Free tier: 0.5 CPU, 512 MB RAM (good for development)
+# - Starter tier: 1 CPU, 512 MB RAM (suitable for small production workloads)
+# - Pro/Professional tier: Variable resources (for high-traffic production)
+#
+# To upgrade, use Render Dashboard → Services → Settings → Plan
+#
+# Monitoring:
+# - Render Dashboard → Services → Logs: View deployment and runtime logs
+# - Render Dashboard → Services → Deploys: See deployment history and status
+# - Use Apollo Server's built-in metrics for GraphQL performance insights

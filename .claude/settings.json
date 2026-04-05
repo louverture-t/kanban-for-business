@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat /dev/stdin | jq -r '.tool_input.file_path // empty' | grep -E '\\.(ts|tsx|js|jsx|json|css|md)$' | head -1 | xargs -r npx prettier --write 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run check 2>&1 && npm run test 2>&1"
+          }
+        ]
+      }
+    ]
+  }
+}

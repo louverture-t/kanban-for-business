@@ -1,0 +1,54 @@
+{
+  "skill_name": "render-deploy",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a MERN stack app with Apollo Server v4 and Mongoose connecting to MongoDB Atlas. The frontend is React + Vite in ./client and the API is in ./server. I want to deploy this to Render. Can you set up the render.yaml?",
+      "expected_output": "A valid render.yaml with two services: a web service for the Express/Apollo API and a static site for the React/Vite frontend, with proper env vars including MONGODB_URI (sync: false), JWT_SECRET (generateValue), fromService cross-references, and SPA rewrite rules.",
+      "files": [],
+      "expectations": [
+        "Output contains a render.yaml file with valid YAML syntax",
+        "render.yaml includes a web service with runtime: node for the API",
+        "render.yaml includes a static service for the React/Vite frontend",
+        "API service has rootDir: ./server",
+        "Static site has rootDir: ./client",
+        "MONGODB_URI env var uses sync: false (not hardcoded)",
+        "JWT_SECRET uses generateValue: true",
+        "Static site has a rewrite rule for SPA routing (/* to /index.html)",
+        "fromService is used to cross-reference URLs between services",
+        "Build commands are appropriate (npm ci && npm run build or similar)",
+        "Static site has staticPublishPath pointing to dist or similar"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I just need to quickly deploy my Express + Apollo GraphQL API to Render. It's a single service, no frontend, just the API connecting to my MongoDB Atlas cluster. Can you create it via MCP?",
+      "expected_output": "MCP commands to create a single web service with correct build/start commands, environment variables for MongoDB connection, and guidance on setting up the Atlas connection string.",
+      "files": [],
+      "expectations": [
+        "Uses MCP create_web_service (or equivalent) to create the service",
+        "Specifies runtime as node",
+        "Includes a buildCommand with npm ci or npm install",
+        "Includes a startCommand pointing to the compiled entry file",
+        "Includes MONGODB_URI as an environment variable",
+        "Provides guidance on MongoDB Atlas IP allowlisting",
+        "Does NOT create a static site (user said API only)",
+        "Mentions or configures PORT environment variable"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My app deployed to Render but the GraphQL endpoint returns a 502. The frontend loads fine but API calls all fail. MongoDB Atlas is set up but I'm not sure about the IP allowlist. Can you help me debug this?",
+      "expected_output": "A structured troubleshooting flow that checks deploy status, error logs, port binding, MongoDB Atlas IP allowlist configuration, and CORS settings.",
+      "files": [],
+      "expectations": [
+        "Checks deploy status (via MCP or CLI commands)",
+        "Checks error logs for the API service",
+        "Addresses MongoDB Atlas IP allowlist as a likely cause",
+        "Mentions checking that Express binds to 0.0.0.0 and uses process.env.PORT",
+        "Suggests verifying the MONGODB_URI environment variable is set correctly",
+        "Provides actionable fix steps, not just diagnostic questions"
+      ]
+    }
+  ]
+}

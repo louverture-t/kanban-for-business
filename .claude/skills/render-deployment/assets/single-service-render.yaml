@@ -1,0 +1,327 @@
+# Render Deployment Configuration — MERN + GraphQL + TypeScript (Single Service)
+#
+# This render.yaml configures a MERN stack as a single web service where:
+# - Backend: Express + Apollo Server v4 + Mongoose v8 + GraphQL (./server)
+# - Frontend: React 18 + Vite + Apollo Client + TypeScript (./client)
+# - Static files: Built React assets served from Express middleware
+# - Database: MongoDB Atlas (external, referenced via MONGODB_URI env var)
+#
+# The Express server:
+# 1. Builds and compiles TypeScript backend code
+# 2. Builds and compiles React frontend code
+# 3. Serves GraphQL API at /graphql
+# 4. Serves React static files at all other routes via express.static()
+#
+# WHEN TO USE THIS PATTERN:
+# - Development and testing
+# - Small-scale production deployments
+# - Simplified infrastructure (single deployment pipeline)
+# - Reduced operational complexity and cost
+#
+# WHEN TO USE TWO-SERVICE PATTERN (monorepo-render.yaml):
+# - High-traffic applications needing independent scaling
+# - Separate frontend caching strategies and CDN usage
+# - Decoupled deployment cycles for frontend and backend
+# - Complex infrastructure or advanced monitoring needs
+#
+# IMPORTANT: For this pattern to work, your Express server must:
+# 1. Build the client: npm run build (run from server build command)
+# 2. Serve client static files: app.use(express.static('../client/dist'))
+# 3. Implement SPA fallback: Serve index.html for non-API routes
+
+services:
+  # =========================================================================
+  # SINGLE WEB SERVICE: Express API + React SPA
+  # =========================================================================
+  # Hosts both the GraphQL API (Express + Apollo Server) and the React frontend.
+  # Runs on a single port; Express routes API requests to /graphql
+  # and serves React files for all other routes.
+
+  - type: web
+    name: app
+
+    # GitHub repository and branch to deploy from
+    repo: https://github.com/user/repo
+    branch: main
+
+    # Path to root directory (or ./server for this pattern)
+    # Render executes build and start commands relative to this path
+    # Assuming Express server is in ./server directory
+    rootDir: ./server
+
+    # Node.js runtime environment
+    runtime: node
+
+    # Build phase: Install backend dependencies, build client, compile TypeScript
+    # Step 1: npm ci in server directory (installs server dependencies)
+    # Step 2: npm run build compiles server TypeScript to dist/
+    # Step 3: Implicit build of client happens in npm run build (if configured in server package.json)
+    #
+    # IMPORTANT: Your server's package.json build script must:
+    # - Compile TypeScript: tsc (outputs to dist/)
+    # - Build client: cd ../client && npm ci && npm run build
+    # OR use a monorepo tool like npm workspaces with a root-level build script
+    #
+    # Alternative if using root-level monorepo build:
+    # buildCommand: npm ci && npm run build:all
+    buildCommand: npm ci && npm run build
+
+    # Start phase: Run the compiled Express server
+    # Ensure this path matches your TypeScript output directory
+    startCommand: node dist/index.js
+
+    # Plan: free tier is sufficient for development/testing
+    # Upgrade to "starter" or higher for production traffic
+    plan: free
+
+    # Environment variables
+    # These control API behavior, database connection, CORS, and frontend API endpoint
+    envVars:
+
+      # Node environment mode (production for Render deployments)
+      - key: NODE_ENV
+        value: production
+
+      # Express listening port
+      # Render dynamically assigns a port; this is the internal port
+      # Express must call app.listen(process.env.PORT)
+      - key: PORT
+        value: "4000"
+
+      # MongoDB Atlas connection string
+      # Format: mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
+      # Sync: false means this value is NOT synced back from Render Dashboard
+      # Manage this value via environment configuration only (security best practice)
+      - key: MONGODB_URI
+        value: mongodb+srv://user:password@cluster.mongodb.net/dbname
+        sync: false
+
+      # JWT secret for token signing and verification
+      # generateValue: true creates a random 32-character secret automatically
+      # Each deployment gets a unique secret (existing tokens become invalid)
+      # For persistent authentication across redeployments, manage this externally
+      - key: JWT_SECRET
+        generateValue: true
+
+      # CORS allowed origins: comma-separated list
+      # In single-service pattern, this is typically the service's own URL
+      # Example: https://app.onrender.com (no separate domain for frontend)
+      # If using custom domain, add it here
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:3000,https://app.onrender.com
+        sync: false
+
+      # Optional: OpenRouter API key for LLM features (if using)
+      - key: OPENROUTER_API_KEY
+        value: ""
+        sync: false
+
+      # Optional: Logging level
+      # Possible values: info, warn, error, debug
+      - key: LOG_LEVEL
+        value: info
+
+      # Optional: Apollo Server introspection (disable in production)
+      - key: APOLLO_INTROSPECTION_ENABLED
+        value: "false"
+
+    # Auto-deploy settings: redeploy whenever code is pushed to the specified branch
+    # Set to false if you prefer manual deployments only
+    autoDeploy: true
+
+# =========================================================================
+# MONGODB ATLAS SETUP (External Database)
+# =========================================================================
+# MongoDB Atlas is hosted externally and accessed via connection string.
+#
+# Steps to set up MongoDB Atlas:
+# 1. Create an account at https://www.mongodb.com/cloud/atlas
+# 2. Create a project and cluster
+# 3. Create a database user (e.g., username: "appuser", auto-generate password)
+# 4. Whitelist Render IP addresses:
+#    - Go to Network Access → Add IP Whitelist Entry
+#    - Add IP: 0.0.0.0/0 (allows all IPs; for production, consider restricting)
+# 5. Get the connection string from Cluster → Connect → Drivers
+#    Format: mongodb+srv://user:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
+# 6. Add this string to MONGODB_URI environment variable
+#
+# Note: Render also offers managed databases, but MongoDB Atlas is free for development
+
+# =========================================================================
+# IMPLEMENTATION REQUIREMENTS
+# =========================================================================
+#
+# For this single-service pattern to work, your Express server must be configured as follows:
+#
+# 1. EXPRESS CONFIGURATION (server/src/index.ts or similar):
+#
+#    import express from 'express';
+#    import path from 'path';
+#    import { ApolloServer } from 'apollo-server-express';
+#    import typeDefs from './graphql/typeDefs';
+#    import resolvers from './graphql/resolvers';
+#
+#    const app = express();
+#
+#    // Apollo Server setup
+#    const server = new ApolloServer({ typeDefs, resolvers });
+#    await server.start();
+#    server.applyMiddleware({ app });
+#
+#    // Middleware
+#    app.use(express.json());
+#
+#    // Serve static files from React build directory
+#    // This must point to the built React assets (../client/dist)
+#    const clientBuildPath = path.join(__dirname, '../client/dist');
+#    app.use(express.static(clientBuildPath));
+#
+#    // SPA fallback: Serve index.html for non-API routes
+#    // This allows React Router to handle client-side routing
+#    // Important: Place this AFTER other route handlers but BEFORE api routes
+#    app.get('*', (req, res) => {
+#      // Skip for API routes, websockets, etc.
+#      if (!req.path.startsWith('/graphql') && !req.path.startsWith('/api')) {
+#        res.sendFile(path.join(clientBuildPath, 'index.html'));
+#      }
+#    });
+#
+#    // Start server
+#    const port = process.env.PORT || 4000;
+#    app.listen(port, () => {
+#      console.log(`Server running at http://localhost:${port}`);
+#    });
+#
+# 2. PACKAGE.JSON BUILD SCRIPT (server/package.json):
+#
+#    {
+#      "scripts": {
+#        "build": "npm run build:server && npm run build:client",
+#        "build:server": "tsc",
+#        "build:client": "cd ../client && npm ci && npm run build",
+#        "start": "node dist/index.js",
+#        "dev": "ts-node src/index.ts"
+#      }
+#    }
+#
+#    OR if using npm workspaces (root package.json):
+#    {
+#      "workspaces": ["client", "server"],
+#      "scripts": {
+#        "build": "npm run build --workspaces",
+#        "build:client": "npm run build --workspace=client",
+#        "build:server": "npm run build --workspace=server",
+#        "start": "npm start --workspace=server"
+#      }
+#    }
+#
+# 3. TYPESCRIPT CONFIGURATION (server/tsconfig.json):
+#
+#    {
+#      "compilerOptions": {
+#        "target": "ES2020",
+#        "module": "commonjs",
+#        "lib": ["ES2020"],
+#        "outDir": "./dist",
+#        "rootDir": "./src",
+#        "strict": true,
+#        "esModuleInterop": true,
+#        "skipLibCheck": true,
+#        "forceConsistentCasingInFileNames": true,
+#        "resolveJsonModule": true,
+#        "moduleResolution": "node"
+#      },
+#      "include": ["src/**/*"],
+#      "exclude": ["node_modules"]
+#    }
+#
+# 4. VITE CONFIGURATION (client/vite.config.ts) — API endpoint:
+#
+#    import { defineConfig } from 'vite';
+#    import react from '@vitejs/plugin-react';
+#
+#    export default defineConfig({
+#      plugins: [react()],
+#      define: {
+#        // Apollo Client will fetch from root domain (/graphql)
+#        // Since frontend and backend are on same domain
+#      }
+#    });
+#
+#    In your Apollo Client setup (client/src/apolloClient.ts):
+#    const client = new ApolloClient({
+#      uri: '/graphql',  // Relative URL; Express handles routing
+#      cache: new InMemoryCache()
+#    });
+
+# =========================================================================
+# DEPLOYMENT NOTES
+# =========================================================================
+#
+# Deploy Process:
+# 1. Commit and push code to the specified GitHub branch (main)
+# 2. Render detects the push (if autoDeploy: true)
+# 3. Deployment steps:
+#    a. Check out code from the branch
+#    b. Run buildCommand in rootDir (./server)
+#       - Installs server dependencies
+#       - Compiles server TypeScript to dist/
+#       - Builds client and outputs to ../client/dist
+#    c. Run startCommand: node dist/index.js
+#    d. Express starts, serves API at /graphql and static files at /
+#    e. Allocate a Render URL (e.g., https://app.onrender.com)
+#
+# Accessing Service After Deployment:
+# - React Frontend: https://app.onrender.com
+# - GraphQL API: https://app.onrender.com/graphql
+# - GraphQL Playground: https://app.onrender.com/graphql (if enabled)
+#
+# Common Issues:
+#
+# Issue: "Cannot find module '../client/dist'"
+# Solution: Verify build script compiles client before starting server
+#           Check that client build completes successfully in logs
+#
+# Issue: "Static site returns 404 for routes"
+# Solution: Ensure SPA fallback in Express serves index.html for non-API routes
+#           Verify clientBuildPath points to correct ../client/dist directory
+#
+# Issue: "Build failed during client build"
+# Solution: Check buildCommand includes `npm ci && npm run build` in client
+#           Verify package.json in client directory exists
+#           Run `npm run build:client` locally to debug
+#
+# Issue: "CORS errors from frontend to API"
+# Solution: Update ALLOWED_ORIGINS to include service URL
+#           Since frontend and backend are same domain, CORS may not be needed
+#           Verify Apollo Client uri is set correctly (usually '/graphql')
+#
+# Issue: "Port conflict or dynamic port not read"
+# Solution: Ensure Express reads process.env.PORT
+#           Verify app.listen(process.env.PORT || 4000, ...)
+#           Check logs for actual port being listened on
+#
+# Scaling & Performance:
+# - Free tier: 0.5 CPU, 512 MB RAM (good for development)
+# - Starter tier: 1 CPU, 512 MB RAM (suitable for small production workloads)
+# - Pro/Professional tier: Variable resources (for high-traffic production)
+#
+# To upgrade, use Render Dashboard → Services → Settings → Plan
+#
+# Performance Considerations for Single Service:
+# - Combined process: Backend and frontend share CPU/memory
+# - Static file serving: Express serves files; consider adding caching headers
+# - Build time: Both client and server are compiled on each deploy
+#   → Longer build times compared to two-service pattern
+# - Independent scaling: Not possible; must scale entire service together
+#   → If frontend needs more resources, backend scales too
+#
+# To minimize build time:
+# - Use npm ci (faster than npm install)
+# - Cache dependencies in client/node_modules via npm ci
+# - Consider separating build scripts if server and client build times vary greatly
+#
+# Monitoring:
+# - Render Dashboard → Services → Logs: View deployment and runtime logs
+# - Render Dashboard → Services → Deploys: See deployment history and status
+# - Use Apollo Server's built-in metrics for GraphQL performance insights
