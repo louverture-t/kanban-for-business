@@ -20,6 +20,15 @@
             "command": "npm run check 2>&1 && npm run test 2>&1"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/security_scan.ps1\""
+          }
+        ]
       }
     ]
   }

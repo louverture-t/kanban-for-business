@@ -17,7 +17,9 @@
       "mcp__plugin_mongodb_mongodb__atlas-local-list-deployments",
       "Bash(cp /c/Users/joeti/.claude/agents/graphql-architect.md /c/Users/joeti/Documents/kanban-for-business/.claude/agents/)",
       "Bash(cp /c/Users/joeti/.claude/agents/render-deployment-engineer.md /c/Users/joeti/Documents/kanban-for-business/.claude/agents/)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(node:*)",
+      "Bash(xargs grep:*)"
     ],
     "deny": [
       "Bash(rm:*)",
