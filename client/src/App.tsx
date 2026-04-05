@@ -9,14 +9,11 @@ import { ErrorBoundary } from '@client/components/error-boundary';
 import { LoginPage } from '@client/pages/login';
 import { RegisterPage } from '@client/pages/register';
 import { ChangePasswordPage } from '@client/pages/change-password';
+import KanbanPage from '@client/pages/kanban';
 
 // Placeholder pages — replaced with real implementations in later days
 function DashboardPage() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Dashboard</h1></div>;
-}
-
-function KanbanPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Kanban Board</h1></div>;
 }
 
 function PriorityPage() {
