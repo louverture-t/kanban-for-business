@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { JWT_SECRET } from '@server/config/connection.js';
 import { AuthenticationError, ForbiddenError } from '@server/utils/errors.js';
 
@@ -16,6 +16,8 @@ export interface TokenPayload {
 
 export interface GraphQLContext {
   user: TokenPayload | null;
+  req: Request;
+  res: Response;
 }
 
 // --- Token operations ---
@@ -56,19 +58,19 @@ export async function hashRefreshToken(token: string): Promise<string> {
 
 // --- Context builder ---
 
-export async function buildContext({ req }: { req: Request }): Promise<GraphQLContext> {
+export async function buildContext({ req, res }: { req: Request; res: Response }): Promise<GraphQLContext> {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return { user: null };
+    return { user: null, req, res };
   }
 
   try {
     const payload = verifyToken(token);
-    return { user: payload };
+    return { user: payload, req, res };
   } catch {
-    return { user: null };
+    return { user: null, req, res };
   }
 }
 

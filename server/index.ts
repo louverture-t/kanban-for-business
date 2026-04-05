@@ -5,23 +5,12 @@ import cookieParser from 'cookie-parser';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import gql from 'graphql-tag';
 
 import { connectDB, PORT, NODE_ENV, CLIENT_ORIGIN } from '@server/config/connection.js';
 import { buildContext, type GraphQLContext } from '@server/utils/auth.js';
-
-// Placeholder schema — replaced when real typeDefs/resolvers are added
-const typeDefs = gql`
-  type Query {
-    health: String
-  }
-`;
-
-const resolvers = {
-  Query: {
-    health: () => 'OK',
-  },
-};
+import typeDefs from '@server/schemas/typeDefs.js';
+import { resolvers } from '@server/resolvers/index.js';
+import { seedDatabase } from '@server/seed.js';
 
 // --- Express + HTTP server ---
 const app = express();
@@ -59,15 +48,6 @@ app.use(
   }),
 );
 
-// --- Cookie settings (exported for auth resolvers) ---
-export const REFRESH_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  maxAge: 2 * 60 * 60 * 1000, // 2 hours
-  path: '/graphql',
-};
-
 // --- Sweep intervals (stubs until models exist) ---
 function archiveSweep(): void {
   // Auto-archive tasks complete 7+ days — implemented with Task model
@@ -90,8 +70,9 @@ if (NODE_ENV === 'development') {
   setupStaticServing(app);
 }
 
-// --- Connect DB + start ---
+// --- Connect DB + seed + start ---
 await connectDB();
+await seedDatabase();
 
 await new Promise<void>((resolve) => {
   httpServer.listen({ port: PORT }, resolve);
