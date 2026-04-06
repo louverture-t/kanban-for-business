@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { User, AuditLog, Invitation } from '@server/models/index.js';
 import {
   signAccessToken,
@@ -69,8 +70,14 @@ export const authResolvers = {
       // Check lockout
       if (user.lockedUntil && user.lockedUntil > new Date()) {
         const remaining = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-        throw new AuthenticationError(
+        throw new GraphQLError(
           `Account locked. Try again in ${remaining} minute${remaining !== 1 ? 's' : ''}.`,
+          {
+            extensions: {
+              code: 'ACCOUNT_LOCKED',
+              lockoutMinutes: remaining,
+            },
+          },
         );
       }
 
@@ -220,7 +227,7 @@ export const authResolvers = {
       }
 
       const user = await User.findById(payload.id);
-      if (!user || !user.refreshTokenHash) {
+      if (!user || !user.active || !user.refreshTokenHash) {
         throw new AuthenticationError('Invalid refresh token');
       }
 

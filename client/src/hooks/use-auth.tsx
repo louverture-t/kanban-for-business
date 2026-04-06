@@ -6,6 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
 import { setAccessToken, clearAccessToken } from '@client/utils/auth';
 import { apolloClient } from '@client/lib/apolloClient';
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const [fetchMe] = useLazyQuery(ME_QUERY, { fetchPolicy: 'network-only' });
   const [loginMutation] = useMutation(LOGIN_MUTATION);
@@ -75,8 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAccessToken();
       setUser(null);
       await apolloClient.clearStore();
+      navigate('/login');
     }
-  }, [logoutMutation]);
+  }, [logoutMutation, navigate]);
 
   const refetchUser = useCallback(async () => {
     try {

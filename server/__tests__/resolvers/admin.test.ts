@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { User, Invitation } from '@server/models/index.js';
+import { User, Invitation, AuditLog } from '@server/models/index.js';
 import { adminResolvers } from '@server/resolvers/adminResolvers.js';
 import type { GraphQLContext, TokenPayload } from '@server/utils/auth.js';
 
@@ -45,6 +45,7 @@ const { Query, Mutation } = adminResolvers;
 beforeEach(async () => {
   await User.deleteMany({});
   await Invitation.deleteMany({});
+  await AuditLog.deleteMany({});
 });
 
 // ─── adminUsers ─────────────────────────────────────────────
@@ -157,6 +158,54 @@ describe('updateUser mutation', () => {
     await expect(
       Mutation.updateUser(null, { id: String(target._id), role: 'manager' }, ctx),
     ).rejects.toThrow();
+  });
+
+  it('creates AuditLog entry when role is changed', async () => {
+    const admin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    const target = await createTestUser({ username: 'target' });
+
+    const ctx = mockContext({ user: superadminPayload(String(admin._id)) });
+    await Mutation.updateUser(null, { id: String(target._id), role: 'manager' }, ctx);
+
+    const log = await AuditLog.findOne({ action: 'user_role_changed' });
+    expect(log).not.toBeNull();
+    expect(log!.userName).toBe('admin');
+  });
+
+  it('creates AuditLog entry when user is deactivated', async () => {
+    const admin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    const target = await createTestUser({ username: 'target' });
+
+    const ctx = mockContext({ user: superadminPayload(String(admin._id)) });
+    await Mutation.updateUser(null, { id: String(target._id), active: false }, ctx);
+
+    const log = await AuditLog.findOne({ action: 'user_deactivated' });
+    expect(log).not.toBeNull();
+  });
+
+  it('clears refreshTokenHash when deactivating a user', async () => {
+    const admin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    const target = await createTestUser({ username: 'target' });
+    // Manually set a refreshTokenHash on the target
+    await User.findByIdAndUpdate(target._id, { refreshTokenHash: 'somehash' });
+
+    const ctx = mockContext({ user: superadminPayload(String(admin._id)) });
+    await Mutation.updateUser(null, { id: String(target._id), active: false }, ctx);
+
+    const updated = await User.findById(target._id);
+    expect(updated!.refreshTokenHash).toBeUndefined();
+  });
+
+  it('preserves refreshTokenHash when only changing role', async () => {
+    const admin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    const target = await createTestUser({ username: 'target' });
+    await User.findByIdAndUpdate(target._id, { refreshTokenHash: 'keepmyhash' });
+
+    const ctx = mockContext({ user: superadminPayload(String(admin._id)) });
+    await Mutation.updateUser(null, { id: String(target._id), role: 'manager' }, ctx);
+
+    const updated = await User.findById(target._id);
+    expect(updated!.refreshTokenHash).toBe('keepmyhash');
   });
 });
 
