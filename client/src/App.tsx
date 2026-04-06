@@ -9,14 +9,10 @@ import { ErrorBoundary } from '@client/components/error-boundary';
 import { LoginPage } from '@client/pages/login';
 import { RegisterPage } from '@client/pages/register';
 import { ChangePasswordPage } from '@client/pages/change-password';
+import { DashboardPage } from '@client/pages/dashboard';
 import { PriorityPage } from '@client/pages/priority';
 import { TeamPage } from '@client/pages/team';
 import KanbanPage from '@client/pages/kanban';
-
-// Placeholder pages — replaced with real implementations in later days
-function DashboardPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Dashboard</h1></div>;
-}
 
 function RoadmapPage() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Roadmap</h1></div>;
