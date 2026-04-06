@@ -14,6 +14,9 @@ import {
   DELETE_COMMENT_MUTATION,
   TASK_TAGS_QUERY,
   TAGS_QUERY,
+  ADD_TAG_TO_TASK_MUTATION,
+  REMOVE_TAG_FROM_TASK_MUTATION,
+  CREATE_TAG_MUTATION,
   AUDIT_LOGS_QUERY,
   PROJECT_MEMBERS_QUERY,
   TASKS_QUERY,
@@ -568,6 +571,60 @@ describe('TaskDialog', () => {
         await waitFor(() => {
           expect(screen.getByPlaceholderText(/write a comment/i)).toHaveValue('');
         });
+      });
+    });
+
+    describe('tags tab', () => {
+      it('renders assigned tags as badges with remove button', async () => {
+        const tag = { _id: 'tag-1', name: 'Urgent', color: '#ef4444' };
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === TASK_TAGS_QUERY
+            ? { ...m, result: { data: { taskTags: [tag] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Urgent')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: /remove tag: urgent/i })).toBeInTheDocument();
+      });
+
+      it('shows unassigned tags in the add-tag dropdown', async () => {
+        const allTag = { _id: 'tag-2', name: 'Low Priority', color: null };
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === TAGS_QUERY
+            ? { ...m, result: { data: { tags: [allTag] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Low Priority')).toBeInTheDocument();
+        });
+      });
+
+      it('renders color picker and name input for new tag creation', async () => {
+        renderDialog('edit');
+
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText(/new tag name/i)).toBeInTheDocument();
+        });
+
+        const colorPicker = screen.getByLabelText(/tag color/i);
+        expect(colorPicker).toBeInTheDocument();
+        expect(colorPicker).toHaveAttribute('type', 'color');
+        expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument();
       });
     });
   });
