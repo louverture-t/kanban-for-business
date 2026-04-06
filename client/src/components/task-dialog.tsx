@@ -130,7 +130,10 @@ function formatDateTime(dateStr: string): string {
 }
 
 function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  if (!dateStr) return '';
+  const ts = new Date(dateStr).getTime();
+  if (isNaN(ts)) return '';
+  const diff = Date.now() - ts;
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
@@ -788,6 +791,7 @@ export function TaskDialog({
       <Separator />
       <div className="flex gap-2">
         <Textarea
+          aria-label="New comment"
           placeholder="Write a comment..."
           value={commentText}
           rows={2}
