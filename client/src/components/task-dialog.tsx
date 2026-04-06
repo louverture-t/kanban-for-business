@@ -907,9 +907,16 @@ export function TaskDialog({
               </p>
             )}
           </div>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {formatDateTime(log.createdAt)}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="shrink-0 text-xs text-muted-foreground cursor-default">
+                {formatRelativeTime(log.createdAt)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {formatDateTime(log.createdAt)}
+            </TooltipContent>
+          </Tooltip>
         </div>
       ))}
     </div>
