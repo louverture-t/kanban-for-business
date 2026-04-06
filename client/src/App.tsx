@@ -13,10 +13,7 @@ import { DashboardPage } from '@client/pages/dashboard';
 import { PriorityPage } from '@client/pages/priority';
 import { TeamPage } from '@client/pages/team';
 import KanbanPage from '@client/pages/kanban';
-
-function RoadmapPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Roadmap</h1></div>;
-}
+import { RoadmapPage } from '@client/pages/roadmap';
 
 function AdminPage() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Admin Panel</h1></div>;

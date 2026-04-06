@@ -119,8 +119,19 @@ function avatarColorFromId(id: string): string {
 
 // ─── Helpers ───────────────────────────────────────────────
 
+/**
+ * Parse a date value that may arrive as an epoch-ms string (e.g. "1775606400000")
+ * or as an ISO / locale date string.  Returns a Date object (may be Invalid Date
+ * if the input is genuinely unparseable).
+ */
+function parseDate(dateStr: string): Date {
+  const n = Number(dateStr);
+  if (!isNaN(n)) return new Date(n);
+  return new Date(dateStr);
+}
+
 function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString(undefined, {
+  return parseDate(dateStr).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -131,7 +142,7 @@ function formatDateTime(dateStr: string): string {
 
 function formatRelativeTime(dateStr: string): string {
   if (!dateStr) return '';
-  const ts = new Date(dateStr).getTime();
+  const ts = parseDate(dateStr).getTime();
   if (isNaN(ts)) return '';
   const diff = Date.now() - ts;
   const minutes = Math.floor(diff / 60_000);
@@ -141,12 +152,14 @@ function formatRelativeTime(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return parseDate(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function toInputDate(dateStr?: string | null): string {
   if (!dateStr) return '';
-  return new Date(dateStr).toISOString().slice(0, 10);
+  const d = parseDate(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
 }
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
