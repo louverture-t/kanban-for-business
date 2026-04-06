@@ -353,6 +353,40 @@ export const AUDIT_LOGS_QUERY = gql`
   }
 `;
 
+// ─── Subtask Mutations ────────────────────────────────────
+
+export const CREATE_SUBTASK_MUTATION = gql`
+  mutation CreateSubtask($taskId: ID!, $title: String!) {
+    createSubtask(taskId: $taskId, title: $title) {
+      _id
+      title
+      completed
+      position
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_SUBTASK_MUTATION = gql`
+  mutation UpdateSubtask($id: ID!, $title: String, $completed: Boolean) {
+    updateSubtask(id: $id, title: $title, completed: $completed) {
+      _id
+      title
+      completed
+      position
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_SUBTASK_MUTATION = gql`
+  mutation DeleteSubtask($id: ID!) {
+    deleteSubtask(id: $id)
+  }
+`;
+
 // ─── Project Members ──────────────────────────────────────
 
 export const PROJECT_MEMBERS_QUERY = gql`

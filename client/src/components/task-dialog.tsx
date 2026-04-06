@@ -26,15 +26,28 @@ import {
   UPDATE_TASK_MUTATION,
   MOVE_TASK_TO_TRASH_MUTATION,
   SUBTASKS_QUERY,
+  CREATE_SUBTASK_MUTATION,
+  UPDATE_SUBTASK_MUTATION,
+  DELETE_SUBTASK_MUTATION,
   COMMENTS_QUERY,
   TASK_TAGS_QUERY,
   TAGS_QUERY,
   AUDIT_LOGS_QUERY,
   PROJECT_MEMBERS_QUERY,
 } from '@client/graphql/operations';
+import { useAuth } from '@client/hooks/use-auth';
 import { toast } from '@client/hooks/use-toast';
 import { TaskStatus, TaskPriority } from '@shared/types';
 import type { ITask } from '@shared/types';
+
+interface ISubtask {
+  _id: string;
+  title: string;
+  completed: boolean;
+  position?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface TaskDialogProps {
   open: boolean;
@@ -170,15 +183,22 @@ function EditForm({
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
+  const { isManagerOrAbove } = useAuth();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
   const { data: taskData } = useQuery<{ task: ITask }>(TASK_QUERY, {
     variables: { id: taskId },
     skip: !taskId,
   });
 
-  useQuery(SUBTASKS_QUERY, { variables: { taskId }, skip: !taskId });
+  const { data: subtasksData } = useQuery<{ subtasks: ISubtask[] }>(SUBTASKS_QUERY, {
+    variables: { taskId },
+    skip: !taskId,
+  });
+
   useQuery(COMMENTS_QUERY, { variables: { taskId }, skip: !taskId });
   useQuery(TASK_TAGS_QUERY, { variables: { taskId }, skip: !taskId });
   useQuery(TAGS_QUERY);
@@ -187,6 +207,15 @@ function EditForm({
 
   const [updateTask, { loading: saving }] = useMutation(UPDATE_TASK_MUTATION);
   const [moveToTrash] = useMutation(MOVE_TASK_TO_TRASH_MUTATION);
+  const [createSubtask, { loading: creatingSubtask }] = useMutation(CREATE_SUBTASK_MUTATION, {
+    refetchQueries: [{ query: SUBTASKS_QUERY, variables: { taskId } }],
+  });
+  const [updateSubtask] = useMutation(UPDATE_SUBTASK_MUTATION, {
+    refetchQueries: [{ query: SUBTASKS_QUERY, variables: { taskId } }],
+  });
+  const [deleteSubtask] = useMutation(DELETE_SUBTASK_MUTATION, {
+    refetchQueries: [{ query: SUBTASKS_QUERY, variables: { taskId } }],
+  });
 
   useEffect(() => {
     if (taskData?.task) {
@@ -220,6 +249,22 @@ function EditForm({
     onSuccess();
     onOpenChange(false);
   }
+
+  async function handleAddSubtask() {
+    if (!newSubtaskTitle.trim()) return;
+    await createSubtask({ variables: { taskId, title: newSubtaskTitle.trim() } });
+    setNewSubtaskTitle('');
+  }
+
+  async function handleToggleSubtask(subtask: ISubtask) {
+    await updateSubtask({ variables: { id: subtask._id, completed: !subtask.completed } });
+  }
+
+  async function handleDeleteSubtask(id: string) {
+    await deleteSubtask({ variables: { id } });
+  }
+
+  const subtasks = subtasksData?.subtasks ?? [];
 
   return (
     <>
@@ -259,7 +304,67 @@ function EditForm({
         </TabsContent>
 
         <TabsContent value="subtasks">
-          <div className="py-4 text-sm text-muted-foreground">No subtasks yet.</div>
+          <div className="py-4 space-y-3">
+            {subtasks.length === 0 && (
+              <p className="text-sm text-muted-foreground">No subtasks yet.</p>
+            )}
+
+            {subtasks.map((subtask) => (
+              <div key={subtask._id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`subtask-${subtask._id}`}
+                  checked={subtask.completed}
+                  onChange={() => handleToggleSubtask(subtask)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary accent-primary cursor-pointer"
+                />
+                <label
+                  htmlFor={`subtask-${subtask._id}`}
+                  className={`flex-1 text-sm cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
+                >
+                  {subtask.title}
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDeleteSubtask(subtask._id)}
+                  aria-label="Delete subtask"
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+
+            <div className="flex gap-2 pt-2">
+              <Input
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                placeholder="Add a subtask..."
+                className="text-sm"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); }}
+              />
+              <Button
+                size="sm"
+                onClick={handleAddSubtask}
+                disabled={creatingSubtask || !newSubtaskTitle.trim()}
+              >
+                Add
+              </Button>
+            </div>
+
+            {isManagerOrAbove && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="w-full mt-1"
+                title="AI subtask generation — coming in Day 4"
+              >
+                Generate with AI
+              </Button>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="comments">
