@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Calendar, CheckSquare, Archive, Trash2 } from 'lucide-react';
+import { Calendar, CheckSquare, Archive, Trash2, RotateCcw } from 'lucide-react';
 
 import type { ITask, IUser } from '@shared/types';
 import { TaskPriority } from '@shared/types';
 import { cn } from '@client/lib/utils';
 import { Badge } from '@client/components/ui/badge';
+import { Button } from '@client/components/ui/button';
 
 // ─── Avatar color palette ──────────────────────────────────
 
@@ -66,6 +67,12 @@ function daysUntilPurge(deletedAt: string): number {
   return Math.max(0, Math.ceil((purgeDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
+function daysSinceDeleted(deletedAt: string): number {
+  const deleteDate = new Date(deletedAt);
+  const now = new Date();
+  return Math.floor((now.getTime() - deleteDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 // ─── Props ─────────────────────────────────────────────────
 
 export interface TaskCardProps {
@@ -73,6 +80,7 @@ export interface TaskCardProps {
   subtaskTotal?: number;
   subtaskCompleted?: number;
   showTrashCountdown?: boolean;
+  onRestore?: () => void;
   onClick?: () => void;
 }
 
@@ -83,12 +91,14 @@ export function TaskCard({
   subtaskTotal = 0,
   subtaskCompleted = 0,
   showTrashCountdown = false,
+  onRestore,
   onClick,
 }: TaskCardProps) {
   const priority = PRIORITY_CONFIG[task.priority];
   const overdue = task.dueDate && !task.completedAt && isOverdue(task.dueDate);
   const assignee: IUser | undefined = task.assignee;
-  const trashDays = showTrashCountdown && task.deletedAt ? daysUntilPurge(task.deletedAt) : null;
+  const daysLeft = showTrashCountdown && task.deletedAt ? daysUntilPurge(task.deletedAt) : null;
+  const daysAgo = showTrashCountdown && task.deletedAt ? daysSinceDeleted(task.deletedAt) : null;
 
   return (
     <motion.div
@@ -116,10 +126,10 @@ export function TaskCard({
           </Badge>
         )}
 
-        {trashDays !== null && (
+        {daysLeft !== null && (
           <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-1">
             <Trash2 className="h-3 w-3" />
-            {trashDays}d left
+            Deleted {daysAgo}d ago — {daysLeft}d until purge
           </Badge>
         )}
       </div>
@@ -171,6 +181,23 @@ export function TaskCard({
           </div>
         )}
       </div>
+
+      {/* Restore button — shown in trash panel */}
+      {showTrashCountdown && onRestore && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 w-full text-xs"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRestore();
+          }}
+        >
+          <RotateCcw className="mr-1.5 h-3 w-3" />
+          Restore
+        </Button>
+      )}
     </motion.div>
   );
 }

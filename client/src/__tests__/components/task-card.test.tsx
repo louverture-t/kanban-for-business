@@ -145,6 +145,6 @@ describe('TaskCard', () => {
       />,
     );
 
-    expect(screen.getByText(/\d+d left/)).toBeInTheDocument();
+    expect(screen.getByText(/Deleted \d+d ago — \d+d until purge/)).toBeInTheDocument();
   });
 });
