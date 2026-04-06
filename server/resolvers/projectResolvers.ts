@@ -225,16 +225,16 @@ export const projectResolvers = {
   Project: {
     folder: (parent: { folderId?: string }) => {
       if (!parent.folderId) return null;
-      return ProjectFolder.findById(parent.folderId);
+      return ProjectFolder.findById(parent.folderId).exec();
     },
 
     createdByUser: (parent: { createdBy?: string }) => {
       if (!parent.createdBy) return null;
-      return User.findById(parent.createdBy);
+      return User.findById(parent.createdBy).exec();
     },
 
     memberCount: (parent: { _id: string }) => {
-      return ProjectMember.countDocuments({ projectId: parent._id });
+      return ProjectMember.countDocuments({ projectId: parent._id }).exec();
     },
   },
 };

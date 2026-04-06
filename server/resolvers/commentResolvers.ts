@@ -106,7 +106,7 @@ export const commentResolvers = {
 
   Comment: {
     author: async (parent: { authorId: string }) => {
-      return User.findById(parent.authorId);
+      return User.findById(parent.authorId).exec();
     },
   },
 };
