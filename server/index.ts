@@ -8,6 +8,7 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 
+import rateLimit from 'express-rate-limit';
 import { connectDB, PORT, NODE_ENV, CLIENT_ORIGIN } from '@server/config/connection.js';
 import { buildContext, type GraphQLContext } from '@server/utils/auth.js';
 import typeDefs from '@server/schemas/typeDefs.js';
@@ -35,6 +36,22 @@ const corsOptions: cors.CorsOptions = {
   credentials: true,
 };
 
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Upload limit exceeded, please try again later.' },
+});
+
 // Health check (REST)
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
@@ -55,7 +72,7 @@ const upload = multer({
   },
 });
 
-app.post('/api/upload', cors(corsOptions), upload.single('file'), async (req, res) => {
+app.post('/api/upload', uploadLimiter, cors(corsOptions), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'No file uploaded' });
@@ -87,6 +104,7 @@ app.post('/api/upload', cors(corsOptions), upload.single('file'), async (req, re
 // GraphQL endpoint
 app.use(
   '/graphql',
+  generalLimiter,
   cors<cors.CorsRequest>(corsOptions),
   express.json(),
   expressMiddleware(server, {

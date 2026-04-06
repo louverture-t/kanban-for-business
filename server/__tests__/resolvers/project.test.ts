@@ -237,6 +237,7 @@ describe('project query', () => {
   it('returns project by ID', async () => {
     const user = await createUser();
     const project = await Project.create({ name: 'Test', createdBy: user._id });
+    await ProjectMember.create({ projectId: project._id, userId: user._id });
 
     const ctx = mockContext({ user: userPayload(String(user._id)) });
     const result = await ProjectQuery.project(null, { id: String(project._id) }, ctx);
@@ -252,6 +253,18 @@ describe('project query', () => {
     await expect(
       ProjectQuery.project(null, { id: fakeId }, ctx),
     ).rejects.toThrow(/not found/i);
+  });
+
+  it('throws for non-member without superadmin role', async () => {
+    const owner = await createUser({ username: 'owner', role: 'manager' });
+    const outsider = await createUser({ username: 'outsider', role: 'user' });
+    const project = await Project.create({ name: 'Private', createdBy: owner._id });
+    await ProjectMember.create({ projectId: project._id, userId: owner._id });
+
+    const ctx = mockContext({ user: userPayload(String(outsider._id)) });
+    await expect(
+      ProjectQuery.project(null, { id: String(project._id) }, ctx),
+    ).rejects.toThrow(/not a member/i);
   });
 });
 
@@ -429,6 +442,17 @@ describe('deleteProject mutation', () => {
       ProjectMutation.deleteProject(null, { id: fakeId }, ctx),
     ).rejects.toThrow(/not found/i);
   });
+
+  it('throws for regular user role even if project member', async () => {
+    const regularUser = await createUser({ username: 'regular', role: 'user' });
+    const project = await Project.create({ name: 'Test', createdBy: regularUser._id });
+    await ProjectMember.create({ projectId: project._id, userId: regularUser._id });
+
+    const ctx = mockContext({ user: userPayload(String(regularUser._id)) });
+    await expect(
+      ProjectMutation.deleteProject(null, { id: String(project._id) }, ctx),
+    ).rejects.toThrow(/Manager or Superadmin/);
+  });
 });
 
 describe('addProjectMember mutation', () => {
@@ -480,6 +504,22 @@ describe('addProjectMember mutation', () => {
       ),
     ).rejects.toThrow(/not found/i);
   });
+
+  it('throws for regular user role even if project member', async () => {
+    const regularUser = await createUser({ username: 'regular', role: 'user' });
+    const target = await createUser({ username: 'target', role: 'user' });
+    const project = await Project.create({ name: 'Test', createdBy: regularUser._id });
+    await ProjectMember.create({ projectId: project._id, userId: regularUser._id });
+
+    const ctx = mockContext({ user: userPayload(String(regularUser._id)) });
+    await expect(
+      ProjectMutation.addProjectMember(
+        null,
+        { projectId: String(project._id), userId: String(target._id) },
+        ctx,
+      ),
+    ).rejects.toThrow(/Manager or Superadmin/);
+  });
 });
 
 describe('removeProjectMember mutation', () => {
@@ -516,6 +556,23 @@ describe('removeProjectMember mutation', () => {
         ctx,
       ),
     ).rejects.toThrow(/not found/i);
+  });
+
+  it('throws for regular user role even if project member', async () => {
+    const regularUser = await createUser({ username: 'regular', role: 'user' });
+    const otherMember = await createUser({ username: 'other', role: 'user' });
+    const project = await Project.create({ name: 'Test', createdBy: regularUser._id });
+    await ProjectMember.create({ projectId: project._id, userId: regularUser._id });
+    await ProjectMember.create({ projectId: project._id, userId: otherMember._id });
+
+    const ctx = mockContext({ user: userPayload(String(regularUser._id)) });
+    await expect(
+      ProjectMutation.removeProjectMember(
+        null,
+        { projectId: String(project._id), userId: String(otherMember._id) },
+        ctx,
+      ),
+    ).rejects.toThrow(/Manager or Superadmin/);
   });
 });
 

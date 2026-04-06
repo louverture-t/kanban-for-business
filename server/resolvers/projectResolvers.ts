@@ -54,6 +54,7 @@ export const projectResolvers = {
         throw new NotFoundError('Project not found');
       }
 
+      await requireProjectAccess(context, args.id);
       return project;
     },
 
@@ -145,6 +146,7 @@ export const projectResolvers = {
       args: { id: string },
       context: GraphQLContext,
     ) => {
+      requireManagerOrAbove(context);
       await requireProjectAccess(context, args.id);
 
       const project = await Project.findByIdAndDelete(args.id);
@@ -175,6 +177,7 @@ export const projectResolvers = {
       args: { projectId: string; userId: string },
       context: GraphQLContext,
     ) => {
+      requireManagerOrAbove(context);
       await requireProjectAccess(context, args.projectId);
 
       // Verify the target user exists
@@ -203,6 +206,7 @@ export const projectResolvers = {
       args: { projectId: string; userId: string },
       context: GraphQLContext,
     ) => {
+      requireManagerOrAbove(context);
       await requireProjectAccess(context, args.projectId);
 
       const member = await ProjectMember.findOneAndDelete({

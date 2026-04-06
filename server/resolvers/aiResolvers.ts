@@ -1,4 +1,4 @@
-import { Task, AuditLog } from '@server/models/index.js';
+import { Task, AuditLog, Notification } from '@server/models/index.js';
 import {
   requireManagerOrAbove,
   requireProjectAccess,
@@ -156,6 +156,12 @@ export const aiResolvers = {
 
         createdTasks.push(task);
       }
+
+      await Notification.create({
+        userId,
+        type: 'ai_complete',
+        content: `AI created ${createdTasks.length} task${createdTasks.length === 1 ? '' : 's'} successfully`,
+      });
 
       return createdTasks;
     },
