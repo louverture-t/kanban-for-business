@@ -458,6 +458,48 @@ describe('TaskDialog', () => {
         const commentInput = screen.getByPlaceholderText(/write a comment/i);
         expect(commentInput.tagName.toLowerCase()).toBe('textarea');
       });
+
+      it('submits new comment via CREATE_COMMENT_MUTATION', async () => {
+        const { within } = await import('@testing-library/react');
+        const user = userEvent.setup();
+
+        const commentMutationMock: MockedResponse = {
+          request: {
+            query: CREATE_COMMENT_MUTATION,
+            variables: { taskId, content: 'Hello world' },
+          },
+          result: {
+            data: {
+              createComment: {
+                _id: 'c-new',
+                taskId,
+                content: 'Hello world',
+                authorId: 'user-1',
+                author: { _id: 'user-1', username: 'joe' },
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        };
+
+        const refetchMock: MockedResponse = {
+          request: { query: COMMENTS_QUERY, variables: { taskId } },
+          result: { data: { comments: [] } },
+        };
+
+        renderDialog('edit', [commentMutationMock, refetchMock]);
+
+        const textarea = await screen.findByPlaceholderText(/write a comment/i);
+        await user.type(textarea, 'Hello world');
+
+        // The send button has no text label — find it inside the same flex container as the textarea
+        const sendButton = within(textarea.closest('div') as HTMLElement).getByRole('button');
+        await user.click(sendButton);
+
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText(/write a comment/i)).toHaveValue('');
+        });
+      });
     });
   });
 });
