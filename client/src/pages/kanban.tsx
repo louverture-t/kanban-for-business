@@ -15,6 +15,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 
 import type { ITask } from '@shared/types';
@@ -24,6 +25,7 @@ import { Button } from '@client/components/ui/button';
 import { Badge } from '@client/components/ui/badge';
 import { TaskCard } from '@client/components/task-card';
 import { TaskDialog } from '@client/components/task-dialog';
+import { AiDecomposeDialog } from '@client/components/ai-decompose-dialog';
 import { useAuth } from '@client/hooks/use-auth';
 import { useToast } from '@client/hooks/use-toast';
 import {
@@ -52,6 +54,7 @@ export default function KanbanPage() {
 
   const [showArchived, setShowArchived] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  const [decomposeOpen, setDecomposeOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [dialogTaskId, setDialogTaskId] = useState<string | undefined>();
@@ -195,6 +198,17 @@ export default function KanbanPage() {
         <h1 className="text-lg font-semibold truncate">Kanban Board</h1>
 
         <div className="flex items-center gap-2">
+          {isManagerOrAbove && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDecomposeOpen(true)}
+            >
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              AI Decompose
+            </Button>
+          )}
+
           <Button
             variant={showArchived ? 'secondary' : 'outline'}
             size="sm"
@@ -375,6 +389,16 @@ export default function KanbanPage() {
           projectId={projectId}
           defaultStatus={dialogDefaultStatus}
           onSuccess={handleDialogSuccess}
+        />
+      )}
+
+      {/* AI Decompose dialog */}
+      {projectId && (
+        <AiDecomposeDialog
+          open={decomposeOpen}
+          onOpenChange={setDecomposeOpen}
+          projectId={projectId}
+          onSuccess={() => refetchTasks()}
         />
       )}
     </div>
