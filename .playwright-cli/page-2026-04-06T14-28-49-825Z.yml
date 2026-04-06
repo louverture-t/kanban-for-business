@@ -1,0 +1,170 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - link:
+            - /url: /
+            - text: K4B
+        - navigation:
+          - list:
+            - listitem:
+              - link:
+                - /url: /
+                - text: Dashboard
+          - generic:
+            - generic:
+              - heading [level=3]: Projects
+              - button:
+                - img
+            - list:
+              - listitem:
+                - button:
+                  - generic: kanban
+                  - img
+                - list:
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/kanban
+                      - text: Kanban
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/priority
+                      - text: Priority
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/roadmap
+                      - text: Roadmap
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/team
+                      - text: Team
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+        - generic:
+          - link:
+            - /url: /notifications
+            - generic: Notifications
+          - generic:
+            - generic:
+              - paragraph: admin
+              - paragraph: manager
+            - button: Logout
+      - main:
+        - alert:
+          - img
+          - generic: "No PHI:"
+          - generic: Do not enter patient names, DOB, MRN, or other identifiers
+        - generic:
+          - generic:
+            - heading [level=1]: Kanban Board
+            - generic:
+              - button:
+                - img
+                - text: AI Decompose
+              - button:
+                - img
+                - text: Show Archived
+              - button:
+                - img
+                - text: Show Trash
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Backlog
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Backlog
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Active
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Active
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Review
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Review
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Complete
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Complete
+              - generic:
+                - paragraph: No tasks
+  - dialog:
+    - generic:
+      - heading [level=2]: New Task
+      - paragraph: Fill in the details to create a new task.
+    - generic:
+      - generic:
+        - generic:
+          - generic: Title *
+          - textbox:
+            - /placeholder: Task title
+            - text: Test Task - Verify Kanban Creation
+        - generic:
+          - generic: Description
+          - textbox:
+            - /placeholder: Describe this task...
+            - text: This task was created via Playwright to verify task creation works on the Kanban board
+        - generic:
+          - generic:
+            - generic: Status
+            - combobox:
+              - generic: Backlog
+              - img
+          - generic:
+            - generic: Priority
+            - combobox [expanded]:
+              - generic: Medium
+              - img
+        - generic:
+          - generic: Assignee
+          - combobox:
+            - generic: Unassigned
+            - img
+        - generic:
+          - generic:
+            - generic: Start date
+            - textbox
+          - generic:
+            - generic: Due date
+            - textbox
+    - generic:
+      - button: Cancel
+      - button: Create Task
+    - button:
+      - img
+      - generic: Close
+  - listbox [ref=e167]:
+    - option "High" [ref=e168]:
+      - generic [ref=e170]: High
+    - option "Medium" [active] [selected] [ref=e171]:
+      - img [ref=e174]
+      - generic [ref=e176]: Medium
+    - option "Low" [ref=e177]:
+      - generic [ref=e179]: Low

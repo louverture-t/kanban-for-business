@@ -9,7 +9,7 @@ Kanban for Business (K4B) — Kanban-style project management app for Atlas Infe
 ## Tech Stack
 
 MERN + GraphQL + TypeScript monorepo:
-- **Frontend:** React 18, Vite, Tailwind v3, Shadcn UI (Radix), Apollo Client v3, React Router v6, `@hello-pangea/dnd`, Recharts, Framer Motion, cmdk
+- **Frontend:** React 18, Vite, Tailwind v3, Shadcn UI (Radix), Apollo Client v4, React Router v6, `@hello-pangea/dnd`, Recharts, Framer Motion, cmdk
 - **Backend:** Node 20, Express 4, Apollo Server v4 (`expressMiddleware`), Mongoose v8, JWT (jsonwebtoken + bcryptjs)
 - **Database:** MongoDB Atlas (M0)
 - **AI:** OpenRouter (google/gemini-3.1-flash-lite-preview), server-side only

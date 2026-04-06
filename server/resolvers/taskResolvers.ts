@@ -54,7 +54,7 @@ export const taskResolvers = {
         filter.archivedAt = null;
       }
 
-      return Task.find(filter).sort({ position: 1 });
+      return Task.find(filter).sort({ position: 1 }).exec();
     },
 
     task: async (
@@ -94,7 +94,7 @@ export const taskResolvers = {
         filter.projectId = { $in: memberships.map((m) => m.projectId) };
       }
 
-      return Task.find(filter).sort({ score: { $meta: 'textScore' } });
+      return Task.find(filter).sort({ score: { $meta: 'textScore' } }).exec();
     },
 
     trashedTasks: async (
@@ -105,7 +105,7 @@ export const taskResolvers = {
       const user = requireAuth(context);
 
       if (user.role === 'superadmin') {
-        return Task.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+        return Task.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 }).exec();
       }
 
       // Non-superadmin: only tasks in projects they belong to
@@ -115,7 +115,7 @@ export const taskResolvers = {
       return Task.find({
         deletedAt: { $ne: null },
         projectId: { $in: projectIds },
-      }).sort({ deletedAt: -1 });
+      }).sort({ deletedAt: -1 }).exec();
     },
   },
 
@@ -337,7 +337,7 @@ export const taskResolvers = {
         args.id,
         { $unset: { deletedAt: 1 } },
         { new: true },
-      );
+      ).exec();
     },
 
     unarchiveTask: async (
@@ -358,7 +358,7 @@ export const taskResolvers = {
         args.id,
         { $unset: { archivedAt: 1 } },
         { new: true },
-      );
+      ).exec();
     },
 
     archiveSweep: async (
@@ -381,23 +381,23 @@ export const taskResolvers = {
   },
 
   Task: {
-    project: (task: ITask) => Project.findById(task.projectId),
+    project: (task: ITask) => Project.findById(task.projectId).exec(),
 
     assignee: (task: ITask) =>
-      task.assigneeId ? User.findById(task.assigneeId) : null,
+      task.assigneeId ? User.findById(task.assigneeId).exec() : null,
 
     createdByUser: (task: ITask) =>
-      task.createdBy ? User.findById(task.createdBy) : null,
+      task.createdBy ? User.findById(task.createdBy).exec() : null,
 
-    subtasks: (task: ITask) => Subtask.find({ taskId: task._id }),
+    subtasks: (task: ITask) => Subtask.find({ taskId: task._id }).exec(),
 
-    comments: (task: ITask) => Comment.find({ taskId: task._id }),
+    comments: (task: ITask) => Comment.find({ taskId: task._id }).exec(),
 
     tags: async (task: ITask) => {
-      const taskTags = await TaskTag.find({ taskId: task._id });
+      const taskTags = await TaskTag.find({ taskId: task._id }).exec();
       const tagIds = taskTags.map((tt) => tt.tagId);
       if (tagIds.length === 0) return [];
-      return Tag.find({ _id: { $in: tagIds } });
+      return Tag.find({ _id: { $in: tagIds } }).exec();
     },
   },
 };

@@ -1,0 +1,55 @@
+- generic [ref=e18]:
+  - complementary [ref=e19]:
+    - link "K4B" [ref=e21] [cursor=pointer]:
+      - /url: /
+    - navigation [ref=e22]:
+      - list [ref=e23]:
+        - listitem [ref=e24]:
+          - link "Dashboard" [ref=e25] [cursor=pointer]:
+            - /url: /
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - heading "Projects" [level=3] [ref=e28]
+          - button "New Project" [ref=e29] [cursor=pointer]:
+            - img
+        - list [ref=e30]:
+          - listitem [ref=e31]:
+            - button "kanban" [active] [ref=e32] [cursor=pointer]:
+              - generic [ref=e34]: kanban
+              - img [ref=e35]
+            - list [ref=e65]:
+              - listitem [ref=e66]:
+                - link "Kanban" [ref=e67] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/kanban
+              - listitem [ref=e68]:
+                - link "Priority" [ref=e69] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/priority
+              - listitem [ref=e70]:
+                - link "Roadmap" [ref=e71] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/roadmap
+              - listitem [ref=e72]:
+                - link "Team" [ref=e73] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/team
+          - listitem [ref=e37]:
+            - button "craeting a kanban project" [ref=e38] [cursor=pointer]:
+              - generic [ref=e40]: craeting a kanban project
+              - img [ref=e41]
+          - listitem [ref=e43]:
+            - button "craeting a kanban project" [ref=e44] [cursor=pointer]:
+              - generic [ref=e46]: craeting a kanban project
+              - img [ref=e47]
+    - generic [ref=e49]:
+      - link "Notifications" [ref=e50] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=e51]: Notifications
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - paragraph [ref=e54]: admin
+          - paragraph [ref=e55]: manager
+        - button "Logout" [ref=e56] [cursor=pointer]
+  - main [ref=e57]:
+    - alert [ref=e58]:
+      - img [ref=e59]
+      - generic [ref=e61]: "No PHI:"
+      - generic [ref=e62]: Do not enter patient names, DOB, MRN, or other identifiers
+    - heading "Dashboard" [level=1] [ref=e64]

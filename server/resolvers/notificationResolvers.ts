@@ -6,7 +6,7 @@ export const notificationResolvers = {
   Query: {
     notifications: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const user = requireAuth(context);
-      return Notification.find({ userId: user.id }).sort({ createdAt: -1 });
+      return Notification.find({ userId: user.id }).sort({ createdAt: -1 }).exec();
     },
   },
 

@@ -11,7 +11,7 @@ export const folderResolvers = {
   Query: {
     folders: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireAuth(context);
-      return ProjectFolder.find().sort({ name: 1 });
+      return ProjectFolder.find().sort({ name: 1 }).exec();
     },
   },
 

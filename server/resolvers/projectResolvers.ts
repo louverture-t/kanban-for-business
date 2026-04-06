@@ -37,13 +37,13 @@ export const projectResolvers = {
 
       // Superadmin sees all projects
       if (user.role === 'superadmin') {
-        return Project.find().sort({ createdAt: -1 });
+        return Project.find().sort({ createdAt: -1 }).exec();
       }
 
       // Others see only projects they're members of
       const memberships = await ProjectMember.find({ userId: user.id }).select('projectId');
       const projectIds = memberships.map((m) => m.projectId);
-      return Project.find({ _id: { $in: projectIds } }).sort({ createdAt: -1 });
+      return Project.find({ _id: { $in: projectIds } }).sort({ createdAt: -1 }).exec();
     },
 
     project: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
@@ -64,7 +64,7 @@ export const projectResolvers = {
       context: GraphQLContext,
     ) => {
       await requireProjectAccess(context, args.projectId);
-      return ProjectMember.find({ projectId: args.projectId }).populate('userId');
+      return ProjectMember.find({ projectId: args.projectId }).populate('userId').exec();
     },
   },
 

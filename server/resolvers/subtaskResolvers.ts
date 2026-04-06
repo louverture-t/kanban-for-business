@@ -11,7 +11,7 @@ export const subtaskResolvers = {
       context: GraphQLContext,
     ) => {
       requireAuth(context);
-      return Subtask.find({ taskId: args.taskId }).sort({ createdAt: 1 });
+      return Subtask.find({ taskId: args.taskId }).sort({ createdAt: 1 }).exec();
     },
   },
 

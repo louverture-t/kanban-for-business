@@ -36,6 +36,36 @@ Call `.exec()` on all Mongoose Query returns inside field resolvers to immediate
 
 **Files changed:** `server/resolvers/projectResolvers.ts`, `server/resolvers/commentResolvers.ts`
 
+---
+
+## Bug #2 — "Create Task" form freezes / task is never created
+
+**Date:** April 6, 2026  
+**Symptom:** On the Kanban page, clicking "Save" or pressing Enter to create a task causes the form to freeze. No task appears. No error toast.
+
+### Root Cause
+
+Same Mongoose v8 single-execution issue as Bug #1, but spread across **all** resolver files. Every resolver that returned a bare Mongoose Query (`.find()`, `.findById()`, `.findOne()`, `.countDocuments()`, `.findByIdAndUpdate()`) without calling `.exec()` was a latent bomb. The `Task` field resolvers were the immediate trigger — when `createTask` returned the new task, GraphQL attempted to resolve its fields (`project`, `assignee`, `createdByUser`, `subtasks`, `comments`, `tags`) and each of those returned bare Queries. One or more non-nullable fields threw, nullifying the entire mutation response.
+
+### Fix
+
+Added `.exec()` to **every** bare Mongoose Query return across all resolver files:
+
+**Files changed:**
+- `server/resolvers/taskResolvers.ts` — `Task` field resolvers (`project`, `assignee`, `createdByUser`, `subtasks`, `comments`, `tags`), `tasks`, `searchTasks`, `trashedTasks` queries, `restoreTask`, `unarchiveTask` mutations
+- `server/resolvers/subtaskResolvers.ts` — `subtasks` query
+- `server/resolvers/tagResolvers.ts` — `tags`, `taskTags` queries
+- `server/resolvers/commentResolvers.ts` — `comments`, `auditLogs` queries
+- `server/resolvers/notificationResolvers.ts` — `notifications` query
+- `server/resolvers/folderResolvers.ts` — `folders` query
+- `server/resolvers/projectResolvers.ts` — `projects`, `projectMembers` queries
+- `server/resolvers/adminResolvers.ts` — `adminUsers`, `adminInvitations` queries
+- `server/resolvers/authResolvers.ts` — `me` query
+
+### Rule Going Forward
+
+**In Mongoose v8+, every resolver that returns the result of a Mongoose query method must call `.exec()`.** This applies to top-level Query resolvers, Mutation resolvers, and especially field resolvers. The safest rule: if you write `return Model.find(...)` or `return Model.findById(...)` anywhere in a resolver, append `.exec()`.
+
 ```ts
 // FIXED — .exec() returns a Promise, not a reusable Query
 memberCount: (parent: { _id: string }) => {
