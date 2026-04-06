@@ -195,6 +195,7 @@ export function TaskDialog({
 
   // ── Tag input ───────────────────────────────────────────
   const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#6366f1');
   const [selectedTagId, setSelectedTagId] = useState<string>('');
 
   // ── Submitting state ────────────────────────────────────
@@ -518,10 +519,11 @@ export function TaskDialog({
     if (!newTagName.trim()) return;
     try {
       const { data } = await createTag({
-        variables: { name: newTagName.trim() },
+        variables: { name: newTagName.trim(), color: newTagColor || undefined },
         refetchQueries: [{ query: TAGS_QUERY }],
       });
       setNewTagName('');
+      setNewTagColor('#6366f1');
       // Auto-add to task if in edit mode
       if (taskId && (data as any)?.createTag?._id) {
         await addTagToTask({
@@ -867,7 +869,15 @@ export function TaskDialog({
 
       {/* Create new tag */}
       <Separator />
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
+        <input
+          type="color"
+          value={newTagColor}
+          onChange={(e) => setNewTagColor(e.target.value)}
+          className="h-9 w-9 cursor-pointer rounded border border-input bg-transparent p-0.5"
+          aria-label="Tag color"
+          title="Tag color"
+        />
         <Input
           placeholder="New tag name..."
           value={newTagName}
@@ -878,6 +888,7 @@ export function TaskDialog({
               handleCreateTag();
             }
           }}
+          className="flex-1"
         />
         <Button variant="outline" size="sm" onClick={handleCreateTag}>
           <Plus className="mr-1 h-3.5 w-3.5" />
