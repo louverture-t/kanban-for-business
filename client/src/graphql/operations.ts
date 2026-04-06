@@ -487,3 +487,26 @@ export const AI_GENERATE_SUBTASKS_MUTATION = gql`
     aiGenerateSubtasks(taskId: $taskId)
   }
 `;
+
+export const AI_DECOMPOSE_MUTATION = gql`
+  mutation AiDecompose($projectId: ID!, $text: String!) {
+    aiDecompose(projectId: $projectId, text: $text) {
+      title
+      description
+      priority
+      dueDate
+      assigneeId
+    }
+  }
+`;
+
+export const AI_CONFIRM_DECOMPOSITION_MUTATION = gql`
+  mutation AiConfirmDecomposition($projectId: ID!, $tasks: [TaskPreviewInput!]!) {
+    aiConfirmDecomposition(projectId: $projectId, tasks: $tasks) {
+      _id
+      title
+      status
+      priority
+    }
+  }
+`;

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, CheckSquare, Archive, Trash2, RotateCcw } from 'lucide-react';
+import { Calendar, CheckSquare, Archive, Trash2, RotateCcw, ArchiveRestore } from 'lucide-react';
 
 import type { ITask, IUser } from '@shared/types';
 import { TaskPriority } from '@shared/types';
@@ -81,6 +81,7 @@ export interface TaskCardProps {
   subtaskCompleted?: number;
   showTrashCountdown?: boolean;
   onRestore?: () => void;
+  onUnarchive?: () => void;
   onClick?: () => void;
 }
 
@@ -92,6 +93,7 @@ export function TaskCard({
   subtaskCompleted = 0,
   showTrashCountdown = false,
   onRestore,
+  onUnarchive,
   onClick,
 }: TaskCardProps) {
   const priority = PRIORITY_CONFIG[task.priority];
@@ -196,6 +198,23 @@ export function TaskCard({
         >
           <RotateCcw className="mr-1.5 h-3 w-3" />
           Restore
+        </Button>
+      )}
+
+      {/* Unarchive button — shown on archived tasks in Kanban columns */}
+      {task.archivedAt && onUnarchive && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 h-6 w-full px-2 text-xs"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onUnarchive();
+          }}
+        >
+          <ArchiveRestore className="mr-1 h-3 w-3" />
+          Unarchive
         </Button>
       )}
     </motion.div>

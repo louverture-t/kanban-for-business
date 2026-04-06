@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
+import { Plus } from 'lucide-react';
 import { useAuth } from '@client/hooks/use-auth';
-import { PROJECTS_QUERY, NOTIFICATIONS_QUERY } from '@client/graphql/operations';
-import type { IProject, INotification } from '@shared/types';
+import { PROJECTS_QUERY, NOTIFICATIONS_QUERY, FOLDERS_QUERY } from '@client/graphql/operations';
+import { ProjectDialog } from '@client/components/project-dialog';
+import { Button } from '@client/components/ui/button';
+import type { IProject, INotification, IProjectFolder } from '@shared/types';
 
 const PROJECT_VIEWS = [
   { label: 'Kanban', path: 'kanban' },
@@ -13,16 +16,20 @@ const PROJECT_VIEWS = [
 ] as const;
 
 export function AppSidebar() {
-  const { user, isSuperadmin, logout } = useAuth();
+  const { user, isManagerOrAbove, isSuperadmin, logout } = useAuth();
   const location = useLocation();
 
   const { data: projectsData } = useQuery(PROJECTS_QUERY);
   const { data: notifData } = useQuery(NOTIFICATIONS_QUERY, {
     pollInterval: 30000,
   });
+  const { data: foldersData } = useQuery(FOLDERS_QUERY, {
+    skip: !isManagerOrAbove,
+  });
 
   const projects: IProject[] = (projectsData as any)?.projects ?? [];
   const notifications: INotification[] = (notifData as any)?.notifications ?? [];
+  const folders: IProjectFolder[] = (foldersData as any)?.folders ?? [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const isActive = (path: string) => location.pathname === path;
@@ -33,6 +40,7 @@ export function AppSidebar() {
   )?._id;
 
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
 
   function toggleProject(projectId: string) {
     setExpandedProjects((prev) => {
@@ -88,11 +96,24 @@ export function AppSidebar() {
         </ul>
 
         {/* Projects */}
-        {projects.length > 0 && (
-          <div className="mt-6">
-            <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="mt-6">
+          <div className="mb-2 flex items-center justify-between px-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Projects
             </h3>
+            {isManagerOrAbove && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                onClick={() => setProjectDialogOpen(true)}
+                aria-label="New Project"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          {projects.length > 0 && (
             <ul className="space-y-1">
               {projects.map((project) => {
                 const isExpanded =
@@ -154,8 +175,8 @@ export function AppSidebar() {
                 );
               })}
             </ul>
-          </div>
-        )}
+          )}
+        </div>
       </nav>
 
       {/* Bottom section */}
@@ -187,6 +208,13 @@ export function AppSidebar() {
           </button>
         </div>
       </div>
+
+      <ProjectDialog
+        open={projectDialogOpen}
+        onOpenChange={setProjectDialogOpen}
+        mode="create"
+        folders={folders}
+      />
     </aside>
   );
 }
