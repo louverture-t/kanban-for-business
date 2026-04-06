@@ -335,6 +335,75 @@ describe('TaskDialog', () => {
       expect(screen.getByLabelText('Description')).toHaveValue('Some description');
     });
 
+    describe('activity tab', () => {
+      it('renders audit log entries with action and actor', async () => {
+        const log = {
+          _id: 'log-1',
+          taskId,
+          action: 'created task',
+          userId: 'user-1',
+          userName: 'joe',
+          changes: null,
+          createdAt: new Date(Date.now() - 3_600_000).toISOString(), // 1h ago
+        };
+
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === AUDIT_LOGS_QUERY
+            ? { ...m, result: { data: { auditLogs: [log] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('joe')).toBeInTheDocument();
+        });
+        expect(screen.getByText('created task')).toBeInTheDocument();
+        // relative time rendered
+        expect(screen.getByText(/ago|just now/i)).toBeInTheDocument();
+      });
+
+      it('renders changes summary when available', async () => {
+        const log = {
+          _id: 'log-2',
+          taskId,
+          action: 'updated task',
+          userId: 'user-1',
+          userName: 'joe',
+          changes: 'status: BACKLOG → ACTIVE',
+          createdAt: new Date().toISOString(),
+        };
+
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === AUDIT_LOGS_QUERY
+            ? { ...m, result: { data: { auditLogs: [log] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('status: BACKLOG → ACTIVE')).toBeInTheDocument();
+        });
+      });
+
+      it('shows empty state when no logs', async () => {
+        renderDialog('edit');
+
+        await waitFor(() => {
+          expect(screen.getByText(/no activity yet/i)).toBeInTheDocument();
+        });
+      });
+    });
+
     describe('comments tab', () => {
       it('renders existing comments with author name and content', async () => {
         const comment = {
