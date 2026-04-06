@@ -1,0 +1,14 @@
+- generic [ref=e20]:
+  - heading "Change Password" [level=1] [ref=e21]
+  - paragraph [ref=e22]: You must change your password before continuing
+  - generic [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]: Current Password
+      - textbox "Current Password" [ref=e26]
+    - generic [ref=e27]:
+      - generic [ref=e28]: New Password
+      - textbox "New Password" [ref=e29]
+    - generic [ref=e30]:
+      - generic [ref=e31]: Confirm New Password
+      - textbox "Confirm New Password" [ref=e32]
+    - button "Update Password" [ref=e33] [cursor=pointer]
