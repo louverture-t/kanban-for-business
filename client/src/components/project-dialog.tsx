@@ -5,6 +5,7 @@ import {
   UPDATE_PROJECT_MUTATION,
   PROJECTS_QUERY,
 } from '@client/graphql/operations';
+import { useAuth } from '@client/hooks/use-auth';
 import { useToast } from '@client/hooks/use-toast';
 import { cn } from '@client/lib/utils';
 import type {
@@ -92,6 +93,7 @@ export function ProjectDialog({
   folders,
   onSuccess,
 }: ProjectDialogProps) {
+  const { isManagerOrAbove } = useAuth();
   const { toast } = useToast();
 
   // ── Form state ──────────────────────────────────────────
@@ -159,6 +161,8 @@ export function ProjectDialog({
   );
 
   const loading = creating || updating;
+
+  if (!isManagerOrAbove) return null;
 
   // ── Submit ──────────────────────────────────────────────
   function handleSubmit(e: React.FormEvent) {
