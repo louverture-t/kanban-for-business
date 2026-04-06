@@ -46,7 +46,7 @@ export const authResolvers = {
   Query: {
     me: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const user = requireAuth(context);
-      return User.findById(user.id);
+      return User.findById(user.id).exec();
     },
   },
 

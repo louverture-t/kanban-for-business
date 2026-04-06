@@ -11,12 +11,12 @@ export const adminResolvers = {
   Query: {
     adminUsers: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireSuperadmin(context);
-      return User.find().sort({ createdAt: -1 });
+      return User.find().sort({ createdAt: -1 }).exec();
     },
 
     adminInvitations: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireSuperadmin(context);
-      return Invitation.find().sort({ createdAt: -1 });
+      return Invitation.find().sort({ createdAt: -1 }).exec();
     },
   },
 

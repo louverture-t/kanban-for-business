@@ -15,7 +15,7 @@ export const tagResolvers = {
       context: GraphQLContext,
     ) => {
       requireAuth(context);
-      return Tag.find().sort({ name: 1 });
+      return Tag.find().sort({ name: 1 }).exec();
     },
 
     taskTags: async (
@@ -24,9 +24,9 @@ export const tagResolvers = {
       context: GraphQLContext,
     ) => {
       requireAuth(context);
-      const taskTags = await TaskTag.find({ taskId: args.taskId });
+      const taskTags = await TaskTag.find({ taskId: args.taskId }).exec();
       const tagIds = taskTags.map((tt) => tt.tagId);
-      return Tag.find({ _id: { $in: tagIds } }).sort({ name: 1 });
+      return Tag.find({ _id: { $in: tagIds } }).sort({ name: 1 }).exec();
     },
   },
 
