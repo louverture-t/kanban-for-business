@@ -252,6 +252,10 @@ export function TaskDialog({
     AI_GENERATE_SUBTASKS_MUTATION,
   );
 
+  // ── Permission derived values ───────────────────────────
+  const isOwner = isEdit && (taskData as any)?.task?.createdBy === user?._id;
+  const canEditOrTrash = isOwner || isManagerOrAbove;
+
   // ── Derived data ────────────────────────────────────────
   const task: ITask | undefined = (taskData as any)?.task;
   const subtasks: ISubtask[] = (subtasksData as any)?.subtasks ?? [];
@@ -983,7 +987,7 @@ export function TaskDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          {isEdit && (
+          {isEdit && canEditOrTrash && (
             <Button
               variant="destructive"
               size="sm"
@@ -997,7 +1001,7 @@ export function TaskDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || (isEdit && !canEditOrTrash)}>
             {submitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
             {isEdit ? 'Save Changes' : 'Create Task'}
           </Button>

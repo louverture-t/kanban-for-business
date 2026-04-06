@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
 
 import { TaskDialog } from '@client/components/task-dialog';
+import * as useAuthHook from '@client/hooks/use-auth';
 import {
   CREATE_TASK_MUTATION,
   TASK_QUERY,
@@ -81,17 +82,19 @@ const mockUser = {
 };
 
 vi.mock('@client/hooks/use-auth', () => ({
-  useAuth: () => ({
-    user: mockUser,
-    isManagerOrAbove: true,
-    isSuperadmin: false,
-    isAuthenticated: true,
-    loading: false,
-    login: vi.fn(),
-    logout: vi.fn(),
-    refetchUser: vi.fn(),
-  }),
+  useAuth: vi.fn(),
 }));
+
+const defaultAuthState = {
+  user: mockUser,
+  isManagerOrAbove: true,
+  isSuperadmin: false,
+  isAuthenticated: true,
+  loading: false,
+  login: vi.fn(),
+  logout: vi.fn(),
+  refetchUser: vi.fn(),
+};
 
 vi.mock('@client/hooks/use-toast', () => ({
   toast: vi.fn(),
@@ -195,6 +198,10 @@ function renderDialog(
 // ─── Tests ──────────────────────────────────────────────────
 
 describe('TaskDialog', () => {
+  beforeEach(() => {
+    vi.mocked(useAuthHook.useAuth).mockReturnValue(defaultAuthState);
+  });
+
   describe('create mode', () => {
     it('shows "New Task" title', () => {
       renderDialog('create');
@@ -336,6 +343,54 @@ describe('TaskDialog', () => {
       });
 
       expect(screen.getByLabelText('Description')).toHaveValue('Some description');
+    });
+
+    it('hides Save Changes and Move to Trash for non-owner non-manager', async () => {
+      vi.mocked(useAuthHook.useAuth).mockReturnValue({
+        user: {
+          _id: 'other-user-id',
+          username: 'alice',
+          email: 'alice@test.com',
+          role: UserRole.USER,
+          active: true,
+          failedAttempts: 0,
+          mustChangePassword: false,
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z',
+        },
+        isManagerOrAbove: false,
+        isSuperadmin: false,
+        isAuthenticated: true,
+        loading: false,
+        login: vi.fn(),
+        logout: vi.fn(),
+        refetchUser: vi.fn(),
+      });
+
+      // Task is owned by 'task-owner-id', not 'other-user-id'
+      const mocks = makeEditMocks().map((m) =>
+        m.request.query === TASK_QUERY
+          ? { ...m, result: { data: { task: { ...editTask, createdBy: 'task-owner-id' } } } }
+          : m,
+      );
+
+      render(
+        <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+          <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+        </MockedProvider>,
+      );
+
+      // Wait for dialog to load
+      await waitFor(() => {
+        expect(screen.getByText('Edit Task')).toBeInTheDocument();
+      });
+
+      // Move to Trash should not be present
+      expect(screen.queryByRole('button', { name: /move to trash/i })).not.toBeInTheDocument();
+
+      // Save Changes should be disabled
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      expect(saveButton).toBeDisabled();
     });
 
     describe('activity tab', () => {
