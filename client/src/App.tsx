@@ -11,14 +11,11 @@ import { RegisterPage } from '@client/pages/register';
 import { ChangePasswordPage } from '@client/pages/change-password';
 import { PriorityPage } from '@client/pages/priority';
 import { TeamPage } from '@client/pages/team';
+import KanbanPage from '@client/pages/kanban';
 
 // Placeholder pages — replaced with real implementations in later days
 function DashboardPage() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Dashboard</h1></div>;
-}
-
-function KanbanPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Kanban Board</h1></div>;
 }
 
 function RoadmapPage() {
