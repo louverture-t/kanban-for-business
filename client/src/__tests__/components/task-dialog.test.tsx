@@ -10,6 +10,8 @@ import {
   TASK_QUERY,
   SUBTASKS_QUERY,
   COMMENTS_QUERY,
+  CREATE_COMMENT_MUTATION,
+  DELETE_COMMENT_MUTATION,
   TASK_TAGS_QUERY,
   TAGS_QUERY,
   AUDIT_LOGS_QUERY,
@@ -331,6 +333,131 @@ describe('TaskDialog', () => {
       });
 
       expect(screen.getByLabelText('Description')).toHaveValue('Some description');
+    });
+
+    describe('comments tab', () => {
+      it('renders existing comments with author name and content', async () => {
+        const comment = {
+          _id: 'c-1',
+          taskId,
+          content: 'Great progress!',
+          authorId: 'user-1',
+          author: { _id: 'user-1', username: 'joe' },
+          createdAt: new Date(Date.now() - 3_600_000).toISOString(), // 1h ago
+        };
+
+        const mocks = [
+          ...makeEditMocks().map((m) =>
+            m.request.query === COMMENTS_QUERY
+              ? { ...m, result: { data: { comments: [comment] } } }
+              : m,
+          ),
+        ];
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog
+              open={true}
+              onOpenChange={vi.fn()}
+              mode="edit"
+              taskId={taskId}
+              projectId={projectId}
+            />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('joe')).toBeInTheDocument();
+        });
+        expect(screen.getByText('Great progress!')).toBeInTheDocument();
+        // relative time rendered (some form of "ago" or "just now")
+        expect(screen.getByText(/ago|just now/i)).toBeInTheDocument();
+      });
+
+      it('shows delete button for own comment', async () => {
+        const comment = {
+          _id: 'c-1',
+          taskId,
+          content: 'My comment',
+          authorId: 'user-1', // same as mockUser._id
+          author: { _id: 'user-1', username: 'joe' },
+          createdAt: new Date().toISOString(),
+        };
+
+        const mocks = [
+          ...makeEditMocks().map((m) =>
+            m.request.query === COMMENTS_QUERY
+              ? { ...m, result: { data: { comments: [comment] } } }
+              : m,
+          ),
+        ];
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog
+              open={true}
+              onOpenChange={vi.fn()}
+              mode="edit"
+              taskId={taskId}
+              projectId={projectId}
+            />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('My comment')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: /delete comment/i })).toBeInTheDocument();
+      });
+
+      it('shows delete button for Manager+ on others comments', async () => {
+        const comment = {
+          _id: 'c-2',
+          taskId,
+          content: 'Other user comment',
+          authorId: 'other-user', // different user
+          author: { _id: 'other-user', username: 'alice' },
+          createdAt: new Date().toISOString(),
+        };
+
+        const mocks = [
+          ...makeEditMocks().map((m) =>
+            m.request.query === COMMENTS_QUERY
+              ? { ...m, result: { data: { comments: [comment] } } }
+              : m,
+          ),
+        ];
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog
+              open={true}
+              onOpenChange={vi.fn()}
+              mode="edit"
+              taskId={taskId}
+              projectId={projectId}
+            />
+          </MockedProvider>,
+        );
+
+        // mockUser is MANAGER (isManagerOrAbove=true), so delete button should appear
+        await waitFor(() => {
+          expect(screen.getByText('Other user comment')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: /delete comment/i })).toBeInTheDocument();
+      });
+
+      it('renders textarea for adding comments', async () => {
+        renderDialog('edit');
+
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText(/write a comment/i)).toBeInTheDocument();
+        });
+
+        // Should be a textarea element
+        const commentInput = screen.getByPlaceholderText(/write a comment/i);
+        expect(commentInput.tagName.toLowerCase()).toBe('textarea');
+      });
     });
   });
 });

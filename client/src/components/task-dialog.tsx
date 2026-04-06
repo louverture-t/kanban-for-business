@@ -129,6 +129,18 @@ function formatDateTime(dateStr: string): string {
   });
 }
 
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function toInputDate(dateStr?: string | null): string {
   if (!dateStr) return '';
   return new Date(dateStr).toISOString().slice(0, 10);
@@ -751,9 +763,9 @@ export function TaskDialog({
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm font-medium">{authorName}</span>
                   <span className="text-xs text-muted-foreground">
-                    {formatDateTime(c.createdAt)}
+                    {formatRelativeTime(c.createdAt)}
                   </span>
-                  {isOwnComment && (
+                  {(isOwnComment || isManagerOrAbove) && (
                     <button
                       onClick={() => handleDeleteComment(c._id)}
                       className="ml-auto text-muted-foreground hover:text-destructive transition-colors"
@@ -775,9 +787,10 @@ export function TaskDialog({
       {/* Add comment */}
       <Separator />
       <div className="flex gap-2">
-        <Input
+        <Textarea
           placeholder="Write a comment..."
           value={commentText}
+          rows={2}
           onChange={(e) => setCommentText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
