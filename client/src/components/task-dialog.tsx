@@ -172,6 +172,11 @@ function EditForm({
 }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<TaskStatus>(TaskStatus.BACKLOG);
+  const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
+  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [startDate, setStartDate] = useState('');
+  const [dueDate, setDueDate] = useState('');
 
   const { data: taskData } = useQuery<{ task: ITask }>(TASK_QUERY, {
     variables: { id: taskId },
@@ -183,15 +188,24 @@ function EditForm({
   useQuery(TASK_TAGS_QUERY, { variables: { taskId }, skip: !taskId });
   useQuery(TAGS_QUERY);
   useQuery(AUDIT_LOGS_QUERY, { variables: { taskId }, skip: !taskId });
-  useQuery(PROJECT_MEMBERS_QUERY, { variables: { projectId }, skip: !projectId });
+  const { data: membersData } = useQuery<{ projectMembers: { _id: string; userId: string; user?: { _id: string; username: string } }[] }>(
+    PROJECT_MEMBERS_QUERY,
+    { variables: { projectId }, skip: !projectId }
+  );
 
   const [updateTask, { loading: saving }] = useMutation(UPDATE_TASK_MUTATION);
   const [moveToTrash] = useMutation(MOVE_TASK_TO_TRASH_MUTATION);
 
   useEffect(() => {
     if (taskData?.task) {
-      setTitle(taskData.task.title ?? '');
-      setDescription(taskData.task.description ?? '');
+      const t = taskData.task;
+      setTitle(t.title ?? '');
+      setDescription(t.description ?? '');
+      setStatus(t.status ?? TaskStatus.BACKLOG);
+      setPriority(t.priority ?? TaskPriority.MEDIUM);
+      setAssigneeId(t.assigneeId ?? '');
+      setStartDate(t.startDate ? t.startDate.slice(0, 10) : '');
+      setDueDate(t.dueDate ? t.dueDate.slice(0, 10) : '');
     }
   }, [taskData]);
 
@@ -207,6 +221,11 @@ function EditForm({
         input: {
           title,
           description: description || undefined,
+          status,
+          priority,
+          assigneeId: assigneeId || undefined,
+          startDate: startDate || undefined,
+          dueDate: dueDate || undefined,
         },
       },
     });
@@ -220,6 +239,8 @@ function EditForm({
     onSuccess();
     onOpenChange(false);
   }
+
+  const members = membersData?.projectMembers ?? [];
 
   return (
     <>
@@ -254,6 +275,76 @@ function EditForm({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TaskStatus.BACKLOG}>Backlog</SelectItem>
+                    <SelectItem value={TaskStatus.ACTIVE}>Active</SelectItem>
+                    <SelectItem value={TaskStatus.REVIEW}>Review</SelectItem>
+                    <SelectItem value={TaskStatus.COMPLETE}>Complete</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TaskPriority.HIGH}>High</SelectItem>
+                    <SelectItem value={TaskPriority.MEDIUM}>Medium</SelectItem>
+                    <SelectItem value={TaskPriority.LOW}>Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Assignee</Label>
+              <Select value={assigneeId} onValueChange={setAssigneeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Unassigned</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m._id} value={m.userId}>
+                      {m.user?.username ?? m.userId}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="task-start-date">Start Date</Label>
+                <Input
+                  id="task-start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="task-due-date">Due Date</Label>
+                <Input
+                  id="task-due-date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </TabsContent>
