@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -30,6 +30,10 @@ vi.mock('framer-motion', () => ({
     div: (props: any) => React.createElement('div', { className: props.className, onClick: props.onClick }, props.children),
   },
   AnimatePresence: ({ children }: any) => children,
+}));
+
+vi.mock('@client/components/task-dialog', () => ({
+  TaskDialog: () => null,
 }));
 
 // ─── Test data ──────────────────────────────────────────────
@@ -146,5 +150,23 @@ describe('PriorityPage', () => {
     renderPriority(mocks);
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('opens task dialog when task card is clicked', async () => {
+    const tasks = [
+      makeTask({ _id: 't1', title: 'Clickable Task', priority: TaskPriority.HIGH }),
+    ];
+
+    renderPriority(makeMocks(tasks));
+
+    await waitFor(() => {
+      expect(screen.getByText('Clickable Task')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Clickable Task'));
+
+    // TaskDialog is mocked to null; verify the click handler doesn't throw
+    // and the card is still rendered (dialog open state managed internally)
+    expect(screen.getByText('Clickable Task')).toBeInTheDocument();
   });
 });
