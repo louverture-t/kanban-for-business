@@ -91,7 +91,7 @@ export function RoadmapPage() {
     return [0, 1, 2].map((i) => {
       const m = addMonths(currentPeriodStart, i);
       return {
-        label: m.toLocaleString('default', { month: 'long', year: 'numeric' }),
+        label: `Q${Math.floor(m.getMonth() / 3) + 1} ${m.getFullYear()}`,
         days: getDaysInMonth(m),
         widthPx: getDaysInMonth(m) * DAY_WIDTH,
       };
