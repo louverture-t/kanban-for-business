@@ -32,6 +32,7 @@ import {
   TASKS_QUERY,
   UPDATE_TASK_MUTATION,
   RESTORE_TASK_MUTATION,
+  UNARCHIVE_TASK_MUTATION,
   ARCHIVE_SWEEP_MUTATION,
   TRASHED_TASKS_QUERY,
 } from '@client/graphql/operations';
@@ -85,6 +86,7 @@ export default function KanbanPage() {
 
   const [updateTask] = useMutation(UPDATE_TASK_MUTATION);
   const [restoreTask] = useMutation(RESTORE_TASK_MUTATION);
+  const [unarchiveTask] = useMutation(UNARCHIVE_TASK_MUTATION);
   const [archiveSweep] = useMutation(ARCHIVE_SWEEP_MUTATION);
 
   // Run archive sweep once on mount
@@ -174,6 +176,22 @@ export default function KanbanPage() {
       toast({
         title: 'Restore failed',
         description: 'Could not restore the task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // ─── Unarchive handler ─────────────────────────────────
+
+  const handleUnarchive = async (taskId: string) => {
+    try {
+      await unarchiveTask({ variables: { id: taskId } });
+      toast({ title: 'Task unarchived' });
+      refetchTasks();
+    } catch {
+      toast({
+        title: 'Unarchive failed',
+        description: 'Could not unarchive the task.',
         variant: 'destructive',
       });
     }
@@ -302,6 +320,7 @@ export default function KanbanPage() {
                             <TaskCard
                               task={task}
                               onClick={() => openEditDialog(task._id)}
+                              onUnarchive={showArchived && task.archivedAt ? () => handleUnarchive(task._id) : undefined}
                             />
                           </div>
                         )}
