@@ -27,6 +27,21 @@
           {
             "type": "command",
             "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/security_scan.ps1\""
+          },
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const f=(JSON.parse(d).tool_input.file_path||'');if(/schema|resolver|typedef|graphql|apollo/i.test(f)){console.log(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',additionalContext:'GRAPHQL GATE: This file touches GraphQL infrastructure. You MUST dispatch the graphql-architect agent (Agent tool with subagent_type=graphql-architect) to review and design this change BEFORE making direct edits. Only if the graphql-architect agent cannot cover the task should general coding proceed. If it falls through, document WHY in the commit message or PR description.'}}))}});\"",
+            "statusMessage": "Checking GraphQL gate..."
+          },
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const f=(JSON.parse(d).tool_input.file_path||'');if(/render\\.yaml|render\\.yml|\\.github\\/workflows\\/(ci|deploy)\\.yml|render-deploy|render\\.config/i.test(f)){console.log(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',additionalContext:'RENDER DEPLOYMENT GATE: This file touches Render infrastructure. Decision gate (execute in order): 1) Check if render-deployment-engineer agent (Agent tool with subagent_type=render-deployment-engineer) can handle it — covers render.yaml Blueprint config, GitHub Actions CI/CD, deploy hooks, zero-downtime deploys, health checks, preview environments, env var management. If in scope → dispatch that agent. Stop. 2) If agent unavailable or task is narrower, check render-deployment skill (Skill tool). If in scope → invoke skill. Stop. 3) Only if NEITHER agent nor skill covers the task does the general coding agent proceed. Document WHY it fell through in commit message or PR description.'}}))}});\"",
+            "statusMessage": "Checking Render deployment gate..."
+          },
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const f=(JSON.parse(d).tool_input.file_path||'');if(/mongo|mongoose|models?\\/|schema|atlas|db\\.ts|database|seed/i.test(f)){console.log(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',additionalContext:'MONGODB GATE: This file touches MongoDB infrastructure. You MUST attempt to use one of the 6 MongoDB skills (via Skill tool) BEFORE making direct edits. Match the task to the right skill: 1) mongodb-connection — MongoDB client setup, connection pooling, URI config, connection options. 2) mongodb-mcp-setup — MCP server config for MongoDB. 3) mongodb-natural-language-querying — Generating read-only queries from natural language. 4) mongodb-query-optimizer — Query performance, indexes, aggregation pipelines, explain plans. 5) mongodb-schema-design — Mongoose model design, schema patterns, embedding vs referencing, validation. 6) mongodb-search-and-ai — Atlas Search, vector search, AI integration with MongoDB. Decision gate (execute in order): 1) Identify which skill covers this task. If a match → invoke via Skill tool. Stop. 2) Only if NO skill covers the task does general coding proceed. Document WHY it fell through in the commit message or PR description.'}}))}});\"",
+            "statusMessage": "Checking MongoDB gate..."
           }
         ]
       }
