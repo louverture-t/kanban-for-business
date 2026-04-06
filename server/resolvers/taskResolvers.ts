@@ -20,6 +20,7 @@ import {
 } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
+import { runArchiveSweep, runPurgeSweep } from '@server/utils/sweeps.js';
 
 export interface TaskInput {
   projectId?: string;
@@ -366,20 +367,7 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       requireSuperadmin(context);
-
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-      const result = await Task.updateMany(
-        {
-          status: 'complete',
-          completedAt: { $lt: sevenDaysAgo },
-          archivedAt: null,
-          deletedAt: null,
-        },
-        { archivedAt: new Date() },
-      );
-
-      return result.modifiedCount;
+      return runArchiveSweep();
     },
 
     purgeSweep: async (
@@ -388,33 +376,7 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       requireSuperadmin(context);
-
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-      const tasksToPurge = await Task.find({
-        $or: [
-          { deletedAt: { $lt: sevenDaysAgo } },
-          { archivedAt: { $lt: thirtyDaysAgo } },
-        ],
-      }).select('_id');
-
-      const taskIds = tasksToPurge.map((t) => t._id);
-
-      if (taskIds.length === 0) {
-        return 0;
-      }
-
-      // Cascade delete related documents
-      await Promise.all([
-        Subtask.deleteMany({ taskId: { $in: taskIds } }),
-        Comment.deleteMany({ taskId: { $in: taskIds } }),
-        TaskTag.deleteMany({ taskId: { $in: taskIds } }),
-        AuditLog.deleteMany({ taskId: { $in: taskIds } }),
-      ]);
-
-      const result = await Task.deleteMany({ _id: { $in: taskIds } });
-      return result.deletedCount;
+      return runPurgeSweep();
     },
   },
 

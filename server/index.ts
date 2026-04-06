@@ -10,6 +10,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 
 import rateLimit from 'express-rate-limit';
 import { connectDB, PORT, NODE_ENV, CLIENT_ORIGIN } from '@server/config/connection.js';
+import { runArchiveSweep, runPurgeSweep } from '@server/utils/sweeps.js';
 import { buildContext, type GraphQLContext } from '@server/utils/auth.js';
 import typeDefs from '@server/schemas/typeDefs.js';
 import { resolvers } from '@server/resolvers/index.js';
@@ -32,7 +33,7 @@ await server.start();
 app.use(cookieParser());
 
 const corsOptions: cors.CorsOptions = {
-  origin: CLIENT_ORIGIN || true,
+  origin: NODE_ENV === 'production' ? (CLIENT_ORIGIN ?? false) : (CLIENT_ORIGIN ?? true),
   credentials: true,
 };
 
@@ -112,18 +113,10 @@ app.use(
   }),
 );
 
-// --- Sweep intervals (stubs until models exist) ---
-function archiveSweep(): void {
-  // Auto-archive tasks complete 7+ days — implemented with Task model
-}
-
-function purgeSweep(): void {
-  // Auto-purge trashed 7+ days, archived 30+ days — implemented with Task model
-}
-
+// --- Sweep intervals ---
 const ONE_HOUR = 60 * 60 * 1000;
-setInterval(archiveSweep, ONE_HOUR);
-setInterval(purgeSweep, ONE_HOUR);
+setInterval(() => runArchiveSweep().catch((err) => console.error('archiveSweep error:', err)), ONE_HOUR);
+setInterval(() => runPurgeSweep().catch((err) => console.error('purgeSweep error:', err)), ONE_HOUR);
 
 // --- Vite (dev) or static (prod) ---
 if (NODE_ENV === 'development') {
