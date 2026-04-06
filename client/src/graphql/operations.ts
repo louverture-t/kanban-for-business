@@ -170,6 +170,40 @@ export const UPDATE_PROJECT_MUTATION = gql`
   }
 `;
 
+export const DELETE_PROJECT_MUTATION = gql`
+  mutation DeleteProject($id: ID!) {
+    deleteProject(id: $id)
+  }
+`;
+
+// ─── Folder Mutations ───────────────────────────────────
+
+export const CREATE_FOLDER_MUTATION = gql`
+  mutation CreateFolder($name: String!, $color: String) {
+    createFolder(name: $name, color: $color) {
+      _id
+      name
+      color
+    }
+  }
+`;
+
+export const UPDATE_FOLDER_MUTATION = gql`
+  mutation UpdateFolder($id: ID!, $name: String, $color: String) {
+    updateFolder(id: $id, name: $name, color: $color) {
+      _id
+      name
+      color
+    }
+  }
+`;
+
+export const DELETE_FOLDER_MUTATION = gql`
+  mutation DeleteFolder($id: ID!) {
+    deleteFolder(id: $id)
+  }
+`;
+
 // ─── Tasks ───────────────────────────────────────────────
 
 export const TASKS_QUERY = gql`
