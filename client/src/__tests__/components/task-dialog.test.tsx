@@ -172,7 +172,7 @@ function renderDialog(
       : [...makeCreateMocks(), ...extraMocks];
 
   const result = render(
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
       <TaskDialog
         open={true}
         onOpenChange={onOpenChange}

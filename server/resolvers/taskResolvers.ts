@@ -15,6 +15,7 @@ import {
   requireAuth,
   requireSuperadmin,
   requireProjectAccess,
+  requireManagerOrAbove,
   type GraphQLContext,
 } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
@@ -76,16 +77,23 @@ export const taskResolvers = {
       args: { query: string },
       context: GraphQLContext,
     ) => {
-      requireAuth(context);
+      const user = requireAuth(context);
 
       if (!args.query.trim()) {
         throw new ValidationError('Search query cannot be empty');
       }
 
-      return Task.find({
+      const filter: Record<string, unknown> = {
         $text: { $search: args.query },
         deletedAt: null,
-      }).sort({ score: { $meta: 'textScore' } });
+      };
+
+      if (user.role !== 'superadmin') {
+        const memberships = await ProjectMember.find({ userId: user.id });
+        filter.projectId = { $in: memberships.map((m) => m.projectId) };
+      }
+
+      return Task.find(filter).sort({ score: { $meta: 'textScore' } });
     },
 
     trashedTasks: async (
@@ -177,6 +185,13 @@ export const taskResolvers = {
       }
 
       await requireProjectAccess(context, String(task.projectId));
+
+      // Owner-or-Manager+ guard: only assignee, creator, or Manager+ can update
+      const isAssignee = task.assigneeId && String(task.assigneeId) === user.id;
+      const isCreator = task.createdBy && String(task.createdBy) === user.id;
+      if (!isAssignee && !isCreator) {
+        requireManagerOrAbove(context);
+      }
 
       const changes: Record<string, { from: unknown; to: unknown }> = {};
       const update: Record<string, unknown> = {};
@@ -395,6 +410,7 @@ export const taskResolvers = {
         Subtask.deleteMany({ taskId: { $in: taskIds } }),
         Comment.deleteMany({ taskId: { $in: taskIds } }),
         TaskTag.deleteMany({ taskId: { $in: taskIds } }),
+        AuditLog.deleteMany({ taskId: { $in: taskIds } }),
       ]);
 
       const result = await Task.deleteMany({ _id: { $in: taskIds } });

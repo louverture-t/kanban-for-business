@@ -15,7 +15,7 @@ const PRIORITY_SECTIONS: { value: TaskPriority; label: string; color: string }[]
 export function PriorityPage() {
   const { projectId } = useParams<{ projectId: string }>();
 
-  const { data, loading, error } = useQuery(TASKS_QUERY, {
+  const { data, loading, error } = useQuery<{ tasks: ITask[] }>(TASKS_QUERY, {
     variables: { projectId, includeArchived: false },
     skip: !projectId,
   });

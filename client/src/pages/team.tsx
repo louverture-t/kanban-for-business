@@ -42,7 +42,7 @@ function groupByAssignee(tasks: ITask[]): AssigneeGroup[] {
 export function TeamPage() {
   const { projectId } = useParams<{ projectId: string }>();
 
-  const { data, loading, error } = useQuery(TASKS_QUERY, {
+  const { data, loading, error } = useQuery<{ tasks: ITask[] }>(TASKS_QUERY, {
     variables: { projectId, includeArchived: false },
     skip: !projectId,
   });

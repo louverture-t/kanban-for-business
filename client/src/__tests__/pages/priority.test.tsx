@@ -66,7 +66,7 @@ function makeMocks(tasks: ITask[]): MockedResponse[] {
 
 function renderPriority(mocks: MockedResponse[]) {
   return render(
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
       <MemoryRouter initialEntries={[`/project/${projectId}/priority`]}>
         <Routes>
           <Route

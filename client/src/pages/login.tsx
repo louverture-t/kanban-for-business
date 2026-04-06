@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@client/hooks/use-auth';
 
@@ -10,10 +10,29 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState<number | null>(null);
+
+  // Countdown timer for lockout
+  useEffect(() => {
+    if (lockoutSeconds === null || lockoutSeconds <= 0) return;
+
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setLockoutSeconds(null);
     setLoading(true);
 
     try {
@@ -25,7 +44,13 @@ export function LoginPage() {
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        const gqlErr = (err as any).graphQLErrors?.[0];
+        if (gqlErr?.extensions?.code === 'ACCOUNT_LOCKED') {
+          const minutes = gqlErr.extensions.lockoutMinutes as number;
+          setLockoutSeconds(minutes * 60);
+        } else {
+          setError(err.message);
+        }
       } else {
         setError('Login failed. Please try again.');
       }
@@ -33,6 +58,8 @@ export function LoginPage() {
       setLoading(false);
     }
   }
+
+  const isLocked = lockoutSeconds !== null && lockoutSeconds > 0;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -72,13 +99,25 @@ export function LoginPage() {
             />
           </div>
 
-          {error && (
+          {isLocked && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-center">
+              <p className="text-sm font-medium text-destructive">Account locked</p>
+              <p className="mt-1 font-mono text-lg text-destructive">
+                {Math.floor(lockoutSeconds! / 60)}:{String(lockoutSeconds! % 60).padStart(2, '0')}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Try again when the timer expires
+              </p>
+            </div>
+          )}
+
+          {error && !isLocked && (
             <p className="text-sm text-destructive">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isLocked}
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}

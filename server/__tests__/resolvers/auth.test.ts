@@ -233,6 +233,23 @@ describe('login mutation', () => {
       Mutation.login(null, { username: 'testuser', password: VALID_PASSWORD }, ctx),
     ).rejects.toThrow(/deactivated/);
   });
+
+  it('lockout error includes ACCOUNT_LOCKED code and lockoutMinutes in extensions', async () => {
+    await createTestUser({
+      lockedUntil: new Date(Date.now() + 10 * 60 * 1000), // 10 min from now
+    });
+    const ctx = mockContext();
+
+    try {
+      await Mutation.login(null, { username: 'testuser', password: VALID_PASSWORD }, ctx);
+      expect.fail('should have thrown');
+    } catch (err: unknown) {
+      const gqlErr = err as any;
+      expect(gqlErr.extensions?.code).toBe('ACCOUNT_LOCKED');
+      expect(typeof gqlErr.extensions?.lockoutMinutes).toBe('number');
+      expect(gqlErr.extensions?.lockoutMinutes).toBeGreaterThan(0);
+    }
+  });
 });
 
 // ─── register ───────────────────────────────────────────────
@@ -464,6 +481,20 @@ describe('refreshToken mutation', () => {
     await expect(
       Mutation.refreshToken(null, {}, ctx),
     ).rejects.toThrow(/Invalid or expired/);
+  });
+
+  it('throws for deactivated user with valid refresh token', async () => {
+    const user = await createTestUser({ active: false });
+    const payload: TokenPayload = { id: String(user._id), username: user.username, role: user.role };
+    const refreshToken = signRefreshToken(payload);
+    const refreshHash = await hashRefreshToken(refreshToken);
+    await User.findByIdAndUpdate(user._id, { refreshTokenHash: refreshHash });
+
+    const ctx = mockContext({ cookies: { refresh_token: refreshToken } });
+
+    await expect(
+      Mutation.refreshToken(null, {}, ctx),
+    ).rejects.toThrow(/Invalid refresh token/);
   });
 });
 

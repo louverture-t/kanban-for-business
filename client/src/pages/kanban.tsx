@@ -26,7 +26,7 @@ export default function KanbanPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
 
-  const { data, loading, error } = useQuery(TASKS_QUERY, {
+  const { data, loading, error } = useQuery<{ tasks: ITask[] }>(TASKS_QUERY, {
     variables: { projectId, includeArchived },
     skip: !projectId,
   });

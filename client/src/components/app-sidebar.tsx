@@ -1,8 +1,16 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
 import { useAuth } from '@client/hooks/use-auth';
 import { PROJECTS_QUERY, NOTIFICATIONS_QUERY } from '@client/graphql/operations';
 import type { IProject, INotification } from '@shared/types';
+
+const PROJECT_VIEWS = [
+  { label: 'Kanban', path: 'kanban' },
+  { label: 'Priority', path: 'priority' },
+  { label: 'Roadmap', path: 'roadmap' },
+  { label: 'Team', path: 'team' },
+] as const;
 
 export function AppSidebar() {
   const { user, isSuperadmin, logout } = useAuth();
@@ -18,6 +26,25 @@ export function AppSidebar() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Derive active project from current path
+  const activeProjectId = projects.find((p) =>
+    location.pathname.startsWith(`/project/${p._id}`),
+  )?._id;
+
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+
+  function toggleProject(projectId: string) {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  }
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-border bg-card">
@@ -67,24 +94,65 @@ export function AppSidebar() {
               Projects
             </h3>
             <ul className="space-y-1">
-              {projects.map((project) => (
-                <li key={project._id}>
-                  <Link
-                    to={`/project/${project._id}/kanban`}
-                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${
-                      location.pathname.startsWith(`/project/${project._id}`)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: project.color }}
-                    />
-                    <span className="truncate">{project.name}</span>
-                  </Link>
-                </li>
-              ))}
+              {projects.map((project) => {
+                const isExpanded =
+                  expandedProjects.has(project._id) || activeProjectId === project._id;
+                const isProjectActive = location.pathname.startsWith(`/project/${project._id}`);
+
+                return (
+                  <li key={project._id}>
+                    <button
+                      onClick={() => toggleProject(project._id)}
+                      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm ${
+                        isProjectActive
+                          ? 'font-medium text-foreground'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                        style={{ backgroundColor: project.color }}
+                      />
+                      <span className="flex-1 truncate text-left">{project.name}</span>
+                      <svg
+                        className={`h-3.5 w-3.5 flex-shrink-0 transition-transform duration-150 ${
+                          isExpanded ? 'rotate-90' : ''
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+
+                    {isExpanded && (
+                      <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-3">
+                        {PROJECT_VIEWS.map(({ label, path }) => (
+                          <li key={path}>
+                            <Link
+                              to={`/project/${project._id}/${path}`}
+                              className={`block rounded-md px-2 py-1.5 text-xs ${
+                                location.pathname === `/project/${project._id}/${path}`
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                              }`}
+                            >
+                              {label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

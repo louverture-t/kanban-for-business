@@ -125,7 +125,7 @@ function makeBaseMocks(tasks: ITask[] = sampleTasks): MockedResponse[] {
 
 function renderKanban(mocks: MockedResponse[]) {
   return render(
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
       <MemoryRouter initialEntries={[`/projects/${projectId}/kanban`]}>
         <Routes>
           <Route

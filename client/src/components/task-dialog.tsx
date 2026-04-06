@@ -34,6 +34,7 @@ import {
 } from '@client/graphql/operations';
 import { toast } from '@client/hooks/use-toast';
 import { TaskStatus, TaskPriority } from '@shared/types';
+import type { ITask } from '@shared/types';
 
 export interface TaskDialogProps {
   open: boolean;
@@ -172,7 +173,7 @@ function EditForm({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
-  const { data: taskData } = useQuery(TASK_QUERY, {
+  const { data: taskData } = useQuery<{ task: ITask }>(TASK_QUERY, {
     variables: { id: taskId },
     skip: !taskId,
   });

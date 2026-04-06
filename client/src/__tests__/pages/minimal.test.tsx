@@ -21,7 +21,7 @@ describe('minimal', () => {
       delay: Infinity,
     }];
     render(
-      <MockedProvider mocks={mocks} addTypename={false}>
+      <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
         <MemoryRouter initialEntries={['/project/proj-1/priority']}>
           <Routes>
             <Route path="/project/:projectId/priority" element={<PriorityPage />} />

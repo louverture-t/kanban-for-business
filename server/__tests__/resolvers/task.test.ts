@@ -243,6 +243,45 @@ describe('searchTasks query', () => {
       Query.searchTasks(null, { query: 'test' }, ctx),
     ).rejects.toThrow(/logged in/);
   });
+
+  it('does not return tasks from projects user is not a member of', async () => {
+    const otherProject = await Project.create({ name: 'Other Project', createdBy: userId });
+    await seedTask({ title: 'My deploy task' });
+    await Task.create({
+      projectId: otherProject._id,
+      title: 'Other deploy task',
+      status: 'backlog',
+      priority: 'medium',
+      position: 0,
+      createdBy: userId,
+    });
+    await Task.ensureIndexes();
+
+    const ctx = mockContext({ user: userPayload });
+    const result = await Query.searchTasks(null, { query: 'deploy' }, ctx);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe('My deploy task');
+  });
+
+  it('superadmin can search tasks across all projects', async () => {
+    const otherProject = await Project.create({ name: 'Other Project', createdBy: userId });
+    await seedTask({ title: 'Project A deploy' });
+    await Task.create({
+      projectId: otherProject._id,
+      title: 'Project B deploy',
+      status: 'backlog',
+      priority: 'medium',
+      position: 0,
+      createdBy: userId,
+    });
+    await Task.ensureIndexes();
+
+    const ctx = mockContext({ user: superadminPayload });
+    const result = await Query.searchTasks(null, { query: 'deploy' }, ctx);
+
+    expect(result).toHaveLength(2);
+  });
 });
 
 // ─── Query: trashedTasks ───────────────────────────────────────
@@ -469,6 +508,70 @@ describe('updateTask mutation', () => {
       }, ctx),
     ).rejects.toThrow(/logged in/);
   });
+
+  // ── Owner-or-Manager+ guard (Gap 4) ──
+
+  it('allows task assignee (role=user) to update', async () => {
+    const task = await seedTask({ assigneeId: userId });
+    const ctx = mockContext({ user: userPayload });
+    const result = await Mutation.updateTask(null, {
+      id: String(task._id),
+      input: { title: 'Updated by assignee' },
+    }, ctx);
+    expect(result!.title).toBe('Updated by assignee');
+  });
+
+  it('allows task creator (role=user) to update when not assignee', async () => {
+    const other = await User.create({ username: 'other', password: 'Test@1234', role: 'user', active: true });
+    // task createdBy=userId, assigneeId=other
+    const task = await seedTask({ assigneeId: other._id });
+    const ctx = mockContext({ user: userPayload });
+    const result = await Mutation.updateTask(null, {
+      id: String(task._id),
+      input: { title: 'Updated by creator' },
+    }, ctx);
+    expect(result!.title).toBe('Updated by creator');
+  });
+
+  it('allows manager (non-owner) to update any task', async () => {
+    const manager = await User.create({ username: 'mgr', password: 'Test@1234', role: 'manager', active: true });
+    await ProjectMember.create({ projectId, userId: manager._id });
+    const managerPayload: TokenPayload = { id: String(manager._id), username: 'mgr', role: 'manager' };
+    const other = await User.create({ username: 'other2', password: 'Test@1234', role: 'user', active: true });
+    const task = await seedTask({ assigneeId: other._id, createdBy: other._id });
+    const ctx = mockContext({ user: managerPayload });
+    const result = await Mutation.updateTask(null, {
+      id: String(task._id),
+      input: { title: 'Updated by manager' },
+    }, ctx);
+    expect(result!.title).toBe('Updated by manager');
+  });
+
+  it('rejects unrelated user (role=user) from updating task they do not own', async () => {
+    const other = await User.create({ username: 'other3', password: 'Test@1234', role: 'user', active: true });
+    const otherPayload: TokenPayload = { id: String(other._id), username: 'other3', role: 'user' };
+    await ProjectMember.create({ projectId, userId: other._id });
+    // task createdBy=userId, assigneeId=userId — other3 is neither
+    const task = await seedTask({ assigneeId: userId });
+    const ctx = mockContext({ user: otherPayload });
+    await expect(
+      Mutation.updateTask(null, {
+        id: String(task._id),
+        input: { title: 'Unauthorized' },
+      }, ctx),
+    ).rejects.toThrow(/Manager or Superadmin/);
+  });
+
+  it('allows superadmin to update any task', async () => {
+    const other = await User.create({ username: 'other4', password: 'Test@1234', role: 'user', active: true });
+    const task = await seedTask({ assigneeId: other._id, createdBy: other._id });
+    const ctx = mockContext({ user: superadminPayload });
+    const result = await Mutation.updateTask(null, {
+      id: String(task._id),
+      input: { title: 'Updated by superadmin' },
+    }, ctx);
+    expect(result!.title).toBe('Updated by superadmin');
+  });
 });
 
 // ─── Mutation: deleteTask ──────────────────────────────────────
@@ -614,6 +717,22 @@ describe('purgeSweep mutation', () => {
     expect(await Subtask.countDocuments()).toBe(0);
     expect(await Comment.countDocuments()).toBe(0);
     expect(await TaskTag.countDocuments()).toBe(0);
+  });
+
+  it('cascade-deletes AuditLog entries for purged tasks', async () => {
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    const task = await seedTask({ deletedAt: eightDaysAgo });
+    await AuditLog.create({
+      taskId: task._id,
+      userId,
+      userName: 'taskuser',
+      action: 'task_created',
+    });
+
+    const ctx = mockContext({ user: superadminPayload });
+    await Mutation.purgeSweep(null, {}, ctx);
+
+    expect(await AuditLog.countDocuments({ taskId: task._id })).toBe(0);
   });
 
   it('hard-deletes tasks archived 30+ days ago', async () => {

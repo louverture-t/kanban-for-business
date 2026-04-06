@@ -97,7 +97,7 @@ function makeMocks(tasks: ITask[]): MockedResponse[] {
 
 function renderTeam(mocks: MockedResponse[]) {
   return render(
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
       <MemoryRouter initialEntries={[`/project/${projectId}/team`]}>
         <Routes>
           <Route
