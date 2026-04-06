@@ -1,0 +1,184 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - link:
+            - /url: /
+            - text: K4B
+        - navigation:
+          - list:
+            - listitem:
+              - link:
+                - /url: /
+                - text: Dashboard
+          - generic:
+            - generic:
+              - heading [level=3]: Projects
+              - button:
+                - img
+            - list:
+              - listitem:
+                - button:
+                  - generic: kanban
+                  - img
+                - list:
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/kanban
+                      - text: Kanban
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/priority
+                      - text: Priority
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/roadmap
+                      - text: Roadmap
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/team
+                      - text: Team
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+        - generic:
+          - link:
+            - /url: /notifications
+            - generic: Notifications
+          - generic:
+            - generic:
+              - paragraph: admin
+              - paragraph: manager
+            - button: Logout
+      - main:
+        - alert:
+          - img
+          - generic: "No PHI:"
+          - generic: Do not enter patient names, DOB, MRN, or other identifiers
+        - generic:
+          - generic:
+            - heading [level=1]: Kanban Board
+            - generic:
+              - button:
+                - img
+                - text: AI Decompose
+              - button:
+                - img
+                - text: Show Archived
+              - button:
+                - img
+                - text: Show Trash
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Backlog
+                  - generic: "1"
+                - button:
+                  - img
+                  - generic: Add task to Backlog
+              - generic:
+                - button:
+                  - generic:
+                    - generic:
+                      - generic: High
+                    - heading [level=3]: Test Task - Verify Kanban Creation
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Active
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Active
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Review
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Review
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Complete
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Complete
+              - generic:
+                - paragraph: No tasks
+  - dialog "Edit Task" [ref=e186]:
+    - generic [ref=e187]:
+      - heading "Edit Task" [level=2] [ref=e188]
+      - paragraph [ref=e189]: Update task details, manage subtasks, comments, and tags.
+    - generic [ref=e191]:
+      - tablist [ref=e192]:
+        - tab "Details" [selected] [ref=e193] [cursor=pointer]
+        - tab "Subtasks" [ref=e194] [cursor=pointer]:
+          - img [ref=e195]
+          - text: Subtasks
+        - tab "Comments" [ref=e198] [cursor=pointer]:
+          - img [ref=e199]
+          - text: Comments
+        - tab "Tags" [ref=e201] [cursor=pointer]:
+          - img [ref=e202]
+          - text: Tags
+        - tab "Activity" [ref=e205] [cursor=pointer]:
+          - img [ref=e206]
+          - text: Activity
+      - tabpanel "Details" [ref=e208]:
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]: Title *
+            - textbox "Title *" [active] [ref=e212]:
+              - /placeholder: Task title
+              - text: Test Task - Verify Kanban Creation
+          - generic [ref=e213]:
+            - generic [ref=e214]: Description
+            - textbox "Description" [ref=e215]:
+              - /placeholder: Describe this task...
+              - text: This task was created via Playwright to verify task creation works on the Kanban board
+          - generic [ref=e216]:
+            - generic [ref=e217]:
+              - generic [ref=e218]: Status
+              - combobox [ref=e219] [cursor=pointer]:
+                - generic: Backlog
+                - img [ref=e220]
+            - generic [ref=e222]:
+              - generic [ref=e223]: Priority
+              - combobox [ref=e224] [cursor=pointer]:
+                - generic: High
+                - img [ref=e225]
+          - generic [ref=e227]:
+            - generic [ref=e228]: Assignee
+            - combobox [ref=e229] [cursor=pointer]:
+              - generic: Unassigned
+              - img [ref=e230]
+          - generic [ref=e232]:
+            - generic [ref=e233]:
+              - generic [ref=e234]: Start date
+              - textbox "Start date" [ref=e235]
+            - generic [ref=e236]:
+              - generic [ref=e237]: Due date
+              - textbox "Due date" [ref=e238]
+    - generic [ref=e239]:
+      - button "Move to Trash" [ref=e240] [cursor=pointer]:
+        - img
+        - text: Move to Trash
+      - button "Cancel" [ref=e241] [cursor=pointer]
+      - button "Save Changes" [ref=e242] [cursor=pointer]
+    - button "Close" [ref=e243] [cursor=pointer]:
+      - img [ref=e244]
+      - generic [ref=e247]: Close
