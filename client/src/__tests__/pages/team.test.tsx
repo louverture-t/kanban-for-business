@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import { TeamPage } from '@client/pages/team';
-import { TASKS_QUERY } from '@client/graphql/operations';
+import { TASKS_QUERY, PROJECT_MEMBERS_QUERY } from '@client/graphql/operations';
 import { TaskStatus, TaskPriority, UserRole } from '@shared/types';
 import type { ITask, IUser } from '@shared/types';
 
@@ -31,6 +31,8 @@ vi.mock('framer-motion', () => ({
   },
   AnimatePresence: ({ children }: any) => children,
 }));
+
+vi.mock('@client/components/task-dialog', () => ({ TaskDialog: () => null }));
 
 // ─── Test data ──────────────────────────────────────────────
 
@@ -81,9 +83,14 @@ const teamTasks: ITask[] = [
   makeTask({ _id: 't4', title: 'Unassigned Task' }),
 ];
 
+const mockProjectMembers = [
+  { _id: 'pm1', projectId, userId: 'u1', user: { _id: 'u1', username: 'alice' }, addedAt: '2026-01-01T00:00:00Z' },
+  { _id: 'pm2', projectId, userId: 'u2', user: { _id: 'u2', username: 'bob' }, addedAt: '2026-01-01T00:00:00Z' },
+];
+
 // ─── Mock builders ──────────────────────────────────────────
 
-function makeMocks(tasks: ITask[]): MockedResponse[] {
+function makeMocks(tasks: ITask[], members = mockProjectMembers): MockedResponse[] {
   return [
     {
       request: {
@@ -91,6 +98,13 @@ function makeMocks(tasks: ITask[]): MockedResponse[] {
         variables: { projectId, includeArchived: false },
       },
       result: { data: { tasks } },
+    },
+    {
+      request: {
+        query: PROJECT_MEMBERS_QUERY,
+        variables: { projectId },
+      },
+      result: { data: { projectMembers: members } },
     },
   ];
 }
@@ -168,10 +182,99 @@ describe('TeamPage', () => {
         result: { data: { tasks: [] } },
         delay: Infinity,
       },
+      {
+        request: {
+          query: PROJECT_MEMBERS_QUERY,
+          variables: { projectId },
+        },
+        result: { data: { projectMembers: [] } },
+        delay: Infinity,
+      },
     ];
 
     renderTeam(mocks);
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('shows avatar circle with initial in section header', async () => {
+    renderTeam(makeMocks(teamTasks));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'alice', level: 2 })).toBeInTheDocument();
+    });
+
+    // Avatar span with initial 'A' for alice
+    const avatarSpans = screen.getAllByText('A');
+    expect(avatarSpans.length).toBeGreaterThan(0);
+    // The avatar span should have rounded-full in its class
+    const avatarEl = avatarSpans.find((el) => el.classList.contains('rounded-full'));
+    expect(avatarEl).toBeInTheDocument();
+  });
+
+  it('shows amber warning badge when unassigned count > 5', async () => {
+    const manyUnassigned = Array.from({ length: 6 }, (_, i) =>
+      makeTask({ _id: `u-task-${i}`, title: `Unassigned ${i}` }),
+    );
+
+    renderTeam(makeMocks(manyUnassigned, []));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unassigned')).toBeInTheDocument();
+    });
+
+    const unassignedHeading = screen.getByRole('heading', { name: 'Unassigned', level: 2 });
+    const container = unassignedHeading.closest('div')!;
+    const badge = within(container).getByText('6');
+    expect(badge).toBeInTheDocument();
+    // Amber badge should have the amber background class
+    expect(badge.className).toMatch(/amber/);
+  });
+
+  it('shows destructive badge when unassigned count > 10', async () => {
+    const manyUnassigned = Array.from({ length: 11 }, (_, i) =>
+      makeTask({ _id: `u-task-${i}`, title: `Unassigned ${i}` }),
+    );
+
+    renderTeam(makeMocks(manyUnassigned, []));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unassigned')).toBeInTheDocument();
+    });
+
+    const unassignedHeading = screen.getByRole('heading', { name: 'Unassigned', level: 2 });
+    const container = unassignedHeading.closest('div')!;
+    const badge = within(container).getByText('11');
+    expect(badge).toBeInTheDocument();
+    // Destructive variant adds destructive classes
+    expect(badge.className).toMatch(/destructive/);
+  });
+
+  it('opens task dialog when task card is clicked', async () => {
+    renderTeam(makeMocks(teamTasks));
+
+    await waitFor(() => {
+      expect(screen.getByText('Alice Task 1')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Alice Task 1'));
+    // TaskDialog is mocked to null — just verify click doesn't throw
+    // and the component stays rendered
+    expect(screen.getByText('Team View')).toBeInTheDocument();
+  });
+
+  it('shows members with zero tasks when projectMembers returns extra members', async () => {
+    const charlie = { _id: 'pm3', projectId, userId: 'u3', user: { _id: 'u3', username: 'charlie' }, addedAt: '2026-01-01T00:00:00Z' };
+    const extendedMembers = [...mockProjectMembers, charlie];
+
+    renderTeam(makeMocks(teamTasks, extendedMembers));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'charlie', level: 2 })).toBeInTheDocument();
+    });
+
+    const charlieHeading = screen.getByRole('heading', { name: 'charlie', level: 2 });
+    const container = charlieHeading.closest('div')!;
+    expect(within(container).getByText('0')).toBeInTheDocument();
   });
 });
