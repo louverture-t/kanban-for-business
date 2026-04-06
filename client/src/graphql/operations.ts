@@ -269,9 +269,57 @@ export const UPDATE_TASK_MUTATION = gql`
 
 export const MOVE_TASK_TO_TRASH_MUTATION = gql`
   mutation MoveTaskToTrash($id: ID!) {
-    moveTaskToTrash(id: $id) {
+    deleteTask(id: $id) {
       _id
       deletedAt
+    }
+  }
+`;
+
+export const RESTORE_TASK_MUTATION = gql`
+  mutation RestoreTask($id: ID!) {
+    restoreTask(id: $id) {
+      _id
+      deletedAt
+    }
+  }
+`;
+
+export const UNARCHIVE_TASK_MUTATION = gql`
+  mutation UnarchiveTask($id: ID!) {
+    unarchiveTask(id: $id) {
+      _id
+      archivedAt
+    }
+  }
+`;
+
+// ─── Subtask Mutations ────────────────────────────────────
+
+export const CREATE_SUBTASK_MUTATION = gql`
+  mutation CreateSubtask($taskId: ID!, $title: String!) {
+    createSubtask(taskId: $taskId, title: $title) {
+      _id
+      title
+      completed
+    }
+  }
+`;
+
+export const UPDATE_SUBTASK_MUTATION = gql`
+  mutation UpdateSubtask($id: ID!, $completed: Boolean, $title: String) {
+    updateSubtask(id: $id, completed: $completed, title: $title) {
+      _id
+      title
+      completed
+    }
+  }
+`;
+
+export const DELETE_SUBTASK_MUTATION = gql`
+  mutation DeleteSubtask($id: ID!) {
+    deleteSubtask(id: $id) {
+      _id
     }
   }
 `;
@@ -291,6 +339,30 @@ export const SUBTASKS_QUERY = gql`
   }
 `;
 
+// ─── Comment Mutations ────────────────────────────────────
+
+export const CREATE_COMMENT_MUTATION = gql`
+  mutation CreateComment($taskId: ID!, $content: String!) {
+    createComment(taskId: $taskId, content: $content) {
+      _id
+      content
+      createdAt
+      author {
+        _id
+        username
+      }
+    }
+  }
+`;
+
+export const DELETE_COMMENT_MUTATION = gql`
+  mutation DeleteComment($id: ID!) {
+    deleteComment(id: $id) {
+      _id
+    }
+  }
+`;
+
 // ─── Comments ─────────────────────────────────────────────
 
 export const COMMENTS_QUERY = gql`
@@ -305,6 +377,34 @@ export const COMMENTS_QUERY = gql`
       }
       createdAt
       updatedAt
+    }
+  }
+`;
+
+// ─── Tag Mutations ────────────────────────────────────────
+
+export const CREATE_TAG_MUTATION = gql`
+  mutation CreateTag($name: String!, $color: String) {
+    createTag(name: $name, color: $color) {
+      _id
+      name
+      color
+    }
+  }
+`;
+
+export const ADD_TAG_TO_TASK_MUTATION = gql`
+  mutation AddTagToTask($taskId: ID!, $tagId: ID!) {
+    addTagToTask(taskId: $taskId, tagId: $tagId) {
+      _id
+    }
+  }
+`;
+
+export const REMOVE_TAG_FROM_TASK_MUTATION = gql`
+  mutation RemoveTagFromTask($taskId: ID!, $tagId: ID!) {
+    removeTagFromTask(taskId: $taskId, tagId: $tagId) {
+      _id
     }
   }
 `;
