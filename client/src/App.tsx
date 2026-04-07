@@ -17,27 +17,16 @@ import { PriorityPage } from '@client/pages/priority';
 import { TeamPage } from '@client/pages/team';
 import KanbanPage from '@client/pages/kanban';
 import { RoadmapPage } from '@client/pages/roadmap';
-
-function AdminPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Admin Panel</h1></div>;
-}
-
-function SettingsPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Settings</h1></div>;
-}
-
-function NotFoundPage() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground">404</h1>
-        <p className="mt-2 text-muted-foreground">Page not found</p>
-      </div>
-    </div>
-  );
-}
+import { AdminPage } from '@client/pages/admin';
+import { SettingsPage } from '@client/pages/settings';
+import { NotFoundPage } from '@client/pages/not-found';
 
 // ─── Protected Route Wrapper ──────────────────────────────
+
+function SuperadminRoute() {
+  const { isSuperadmin } = useAuth();
+  return isSuperadmin ? <Outlet /> : <Navigate to="/" replace />;
+}
 
 function ProtectedRoute() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -119,7 +108,9 @@ function App() {
                   <Route path="/project/:projectId/priority" element={<PriorityPage />} />
                   <Route path="/project/:projectId/roadmap" element={<RoadmapPage />} />
                   <Route path="/project/:projectId/team" element={<TeamPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
+                  <Route element={<SuperadminRoute />}>
+                    <Route path="/admin" element={<AdminPage />} />
+                  </Route>
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
 
