@@ -8,6 +8,7 @@ import { NoPhiBanner } from '@client/components/no-phi-banner';
 import { ErrorBoundary } from '@client/components/error-boundary';
 import { SleepOverlay } from '@client/components/sleep-overlay';
 import { useIdleTimer } from '@client/hooks/use-idle-timer';
+import { SearchCommand } from '@client/components/search-command';
 import { LoginPage } from '@client/pages/login';
 import { RegisterPage } from '@client/pages/register';
 import { ChangePasswordPage } from '@client/pages/change-password';
@@ -66,6 +67,7 @@ function ProtectedRoute() {
         <NoPhiBanner />
         <Outlet />
       </main>
+      <SearchCommand />
       {isIdle && <SleepOverlay resetTimer={resetTimer} />}
     </div>
   );
