@@ -177,33 +177,33 @@ describe('DashboardPage', () => {
   it('renders progress bar section with correct project progress', async () => {
     renderDashboard();
 
+    // Wait for all three queries (projects + tasks + folders) to settle.
+    // Using 'Clinical' as the sentinel because it comes from FOLDERS_QUERY,
+    // which is the last to arrive when the loading gate passes early on tasks.
     await waitFor(() => {
       expect(screen.getByText('Project Progress')).toBeInTheDocument();
+      expect(screen.getByText('Clinical')).toBeInTheDocument();
+      expect(screen.getByText('Project One')).toBeInTheDocument();
+      expect(screen.getByText('Project Two')).toBeInTheDocument();
+      // Project One: 1 complete / 2 total → "1/2 tasks"
+      expect(screen.getByText('1/2 tasks')).toBeInTheDocument();
+      // Project Two: 0 complete / 2 total → "0/2 tasks"
+      expect(screen.getByText('0/2 tasks')).toBeInTheDocument();
     });
-
-    // Folder name and project names
-    expect(screen.getByText('Clinical')).toBeInTheDocument();
-    expect(screen.getByText('Project One')).toBeInTheDocument();
-    expect(screen.getByText('Project Two')).toBeInTheDocument();
-
-    // Project One: 1 complete / 2 total → "1/2 tasks"
-    expect(screen.getByText('1/2 tasks')).toBeInTheDocument();
-    // Project Two: 0 complete / 2 total → "0/2 tasks"
-    expect(screen.getByText('0/2 tasks')).toBeInTheDocument();
   });
 
   it('renders folder sections with project progress bars', async () => {
     renderDashboard();
 
+    // All assertions inside waitFor so the retry loop catches folder data arriving
+    // after the tasks query settles (which unblocks the loading gate).
     await waitFor(() => {
       expect(screen.getByText('Clinical')).toBeInTheDocument();
+      // Folder count indicator
+      expect(screen.getAllByText('(1 projects)').length).toBeGreaterThan(0);
+      // No Folder section should contain Project Two (no folderId)
+      expect(screen.getByText('No Folder')).toBeInTheDocument();
     });
-
-    // Folder count indicator — at least one "(1 projects)" text appears
-    expect(screen.getAllByText('(1 projects)').length).toBeGreaterThan(0);
-
-    // No Folder section should contain Project Two (no folderId)
-    expect(screen.getByText('No Folder')).toBeInTheDocument();
   });
 
   it('renders chart section titles', async () => {
@@ -211,9 +211,8 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Status Distribution')).toBeInTheDocument();
+      expect(screen.getByText('Priority Distribution')).toBeInTheDocument();
     });
-
-    expect(screen.getByText('Priority Distribution')).toBeInTheDocument();
   });
 
   it('shows "No tasks yet" when there are no tasks for status chart', async () => {

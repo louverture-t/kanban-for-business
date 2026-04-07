@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { useAuth } from '@client/hooks/use-auth';
 import { PROJECTS_QUERY, NOTIFICATIONS_QUERY, FOLDERS_QUERY } from '@client/graphql/operations';
 import { ProjectDialog } from '@client/components/project-dialog';
+import { NotificationBell } from '@client/components/notification-bell';
 import { Button } from '@client/components/ui/button';
 import type { IProject, INotification, IProjectFolder } from '@shared/types';
 
@@ -20,7 +21,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   const { data: projectsData } = useQuery(PROJECTS_QUERY);
-  const { data: notifData } = useQuery(NOTIFICATIONS_QUERY, {
+  const { data: notifData, refetch } = useQuery(NOTIFICATIONS_QUERY, {
     pollInterval: 30000,
   });
   const { data: foldersData } = useQuery(FOLDERS_QUERY, {
@@ -30,7 +31,6 @@ export function AppSidebar() {
   const projects: IProject[] = (projectsData as any)?.projects ?? [];
   const notifications: INotification[] = (notifData as any)?.notifications ?? [];
   const folders: IProjectFolder[] = (foldersData as any)?.folders ?? [];
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const isActive = (path: string) => location.pathname === path;
 

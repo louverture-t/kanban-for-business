@@ -382,7 +382,7 @@ export function DashboardPage() {
   }
 
   // ── Render ───────────────────────────────────────────────
-  if (loading && activeTasks.length === 0) {
+  if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <p className="text-muted-foreground">Loading dashboard...</p>
