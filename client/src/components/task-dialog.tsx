@@ -203,6 +203,11 @@ export function TaskDialog({
   // ── Subtask input ───────────────────────────────────────
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
+  // ── AI subtask preview state ───────────────────────────
+  const [aiPreviews, setAiPreviews] = useState<string[]>([]);
+  const [aiPreviewAccepted, setAiPreviewAccepted] = useState<boolean[]>([]);
+  const [aiPreviewEdits, setAiPreviewEdits] = useState<string[]>([]);
+
   // ── Comment input ───────────────────────────────────────
   const [commentText, setCommentText] = useState('');
 
@@ -449,11 +454,9 @@ export function TaskDialog({
     try {
       const { data } = await aiGenerateSubtasks({ variables: { taskId } });
       const suggestions: string[] = (data as any)?.aiGenerateSubtasks ?? [];
-      for (const s of suggestions) {
-        await createSubtask({ variables: { taskId, title: s } });
-      }
-      refetchSubtasks();
-      toast({ title: `Generated ${suggestions.length} subtasks` });
+      setAiPreviews(suggestions);
+      setAiPreviewAccepted(suggestions.map(() => true));
+      setAiPreviewEdits([...suggestions]);
     } catch (err: any) {
       toast({
         title: 'AI generation failed',
@@ -461,7 +464,29 @@ export function TaskDialog({
         variant: 'destructive',
       });
     }
-  }, [taskId, aiGenerateSubtasks, createSubtask, refetchSubtasks]);
+  }, [taskId, aiGenerateSubtasks]);
+
+  const handleAddSelected = useCallback(async () => {
+    const accepted = aiPreviews.reduce<number[]>((acc, _, i) => {
+      if (aiPreviewAccepted[i]) acc.push(i);
+      return acc;
+    }, []);
+    if (accepted.length === 0 || !taskId) return;
+    for (const i of accepted) {
+      await createSubtask({ variables: { taskId, title: aiPreviewEdits[i] } });
+    }
+    setAiPreviews([]);
+    setAiPreviewAccepted([]);
+    setAiPreviewEdits([]);
+    refetchSubtasks();
+    toast({ title: `Added ${accepted.length} subtask(s)` });
+  }, [aiPreviews, aiPreviewAccepted, aiPreviewEdits, taskId, createSubtask, refetchSubtasks]);
+
+  const handleCancelPreview = useCallback(() => {
+    setAiPreviews([]);
+    setAiPreviewAccepted([]);
+    setAiPreviewEdits([]);
+  }, []);
 
   // ── Comment handlers ────────────────────────────────────
 
@@ -701,6 +726,50 @@ export function TaskDialog({
             </TooltipTrigger>
             <TooltipContent>Generate subtasks with AI</TooltipContent>
           </Tooltip>
+        </div>
+      )}
+
+      {/* AI Suggestions preview */}
+      {aiPreviews.length > 0 && (
+        <div className="rounded-md border border-border p-3 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">AI Suggestions</p>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            {aiPreviews.map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={aiPreviewAccepted[i]}
+                  onChange={() =>
+                    setAiPreviewAccepted((prev) =>
+                      prev.map((v, idx) => (idx === i ? !v : v)),
+                    )
+                  }
+                  className="h-4 w-4 rounded border-input accent-primary shrink-0"
+                />
+                <Input
+                  value={aiPreviewEdits[i]}
+                  onChange={(e) =>
+                    setAiPreviewEdits((prev) =>
+                      prev.map((v, idx) => (idx === i ? e.target.value : v)),
+                    )
+                  }
+                  className="h-7 text-sm"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button
+              size="sm"
+              onClick={handleAddSelected}
+              disabled={aiPreviewAccepted.filter(Boolean).length === 0}
+            >
+              Add Selected ({aiPreviewAccepted.filter(Boolean).length})
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleCancelPreview}>
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
 
