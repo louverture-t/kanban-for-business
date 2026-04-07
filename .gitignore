@@ -1,5 +1,6 @@
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 
 # Dependencies
 node_modules/
@@ -39,8 +40,13 @@ service-account*.json
 secrets.json
 secrets.yaml
 secrets.yml
-k4b-PRD.md 
-PLAN.md 
+PLAN.md
+day4.5.md
+day5.md
+day4.md
+k4b-PRD.md
+lesson.md
+worktree.md
 
 
 # ===========================================
