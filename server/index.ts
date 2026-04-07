@@ -38,8 +38,8 @@ const corsOptions: cors.CorsOptions = {
 };
 
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
+  windowMs: NODE_ENV === 'production' ? 15 * 60 * 1000 : 60 * 1000, // 15 min prod / 1 min dev
+  max: NODE_ENV === 'production' ? 200 : 10_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
@@ -47,7 +47,7 @@ const generalLimiter = rateLimit({
 
 const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20,
+  max: NODE_ENV === 'production' ? 20 : 1_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Upload limit exceeded, please try again later.' },
