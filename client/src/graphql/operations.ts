@@ -544,3 +544,22 @@ export const AI_CONFIRM_DECOMPOSITION_MUTATION = gql`
     }
   }
 `;
+
+// ─── Search ───────────────────────────────────────────────
+
+export const SEARCH_TASKS_QUERY = gql`
+  query SearchTasks($query: String!) {
+    searchTasks(query: $query) {
+      _id
+      projectId
+      title
+      status
+      archivedAt
+      project {
+        _id
+        name
+        color
+      }
+    }
+  }
+`;

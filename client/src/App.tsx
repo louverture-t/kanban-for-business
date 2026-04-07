@@ -6,6 +6,7 @@ import { ThemeProvider } from '@client/components/theme-provider';
 import { AppSidebar } from '@client/components/app-sidebar';
 import { NoPhiBanner } from '@client/components/no-phi-banner';
 import { ErrorBoundary } from '@client/components/error-boundary';
+import { SearchCommand } from '@client/components/search-command';
 import { LoginPage } from '@client/pages/login';
 import { RegisterPage } from '@client/pages/register';
 import { ChangePasswordPage } from '@client/pages/change-password';
@@ -63,6 +64,7 @@ function ProtectedRoute() {
         <NoPhiBanner />
         <Outlet />
       </main>
+      <SearchCommand />
     </div>
   );
 }
