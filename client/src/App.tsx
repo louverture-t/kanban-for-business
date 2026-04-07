@@ -6,24 +6,17 @@ import { ThemeProvider } from '@client/components/theme-provider';
 import { AppSidebar } from '@client/components/app-sidebar';
 import { NoPhiBanner } from '@client/components/no-phi-banner';
 import { ErrorBoundary } from '@client/components/error-boundary';
+import { SleepOverlay } from '@client/components/sleep-overlay';
+import { useIdleTimer } from '@client/hooks/use-idle-timer';
+import { SearchCommand } from '@client/components/search-command';
 import { LoginPage } from '@client/pages/login';
 import { RegisterPage } from '@client/pages/register';
 import { ChangePasswordPage } from '@client/pages/change-password';
+import { DashboardPage } from '@client/pages/dashboard';
 import { PriorityPage } from '@client/pages/priority';
 import { TeamPage } from '@client/pages/team';
-
-// Placeholder pages — replaced with real implementations in later days
-function DashboardPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Dashboard</h1></div>;
-}
-
-function KanbanPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Kanban Board</h1></div>;
-}
-
-function RoadmapPage() {
-  return <div className="p-8"><h1 className="text-2xl font-bold">Roadmap</h1></div>;
-}
+import KanbanPage from '@client/pages/kanban';
+import { RoadmapPage } from '@client/pages/roadmap';
 
 function AdminPage() {
   return <div className="p-8"><h1 className="text-2xl font-bold">Admin Panel</h1></div>;
@@ -48,6 +41,7 @@ function NotFoundPage() {
 
 function ProtectedRoute() {
   const { isAuthenticated, loading, user } = useAuth();
+  const { isIdle, resetTimer } = useIdleTimer();
 
   if (loading) {
     return (
@@ -73,6 +67,8 @@ function ProtectedRoute() {
         <NoPhiBanner />
         <Outlet />
       </main>
+      <SearchCommand />
+      {isIdle && <SleepOverlay resetTimer={resetTimer} />}
     </div>
   );
 }

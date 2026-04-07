@@ -1,0 +1,193 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e18]:
+    - complementary [ref=e19]:
+      - link "K4B" [ref=e21] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e22]:
+        - list [ref=e23]:
+          - listitem [ref=e24]:
+            - link "Dashboard" [ref=e25] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e26]:
+            - link "Admin" [ref=e27] [cursor=pointer]:
+              - /url: /admin
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - heading "Projects" [level=3] [ref=e30]
+            - button "New Project" [ref=e31] [cursor=pointer]:
+              - img
+          - list [ref=e32]:
+            - listitem [ref=e33]:
+              - button "Test Project Fix" [ref=e34] [cursor=pointer]:
+                - generic [ref=e36]: Test Project Fix
+                - img [ref=e37]
+            - listitem [ref=e39]:
+              - button "Test Project 2" [ref=e40] [cursor=pointer]:
+                - generic [ref=e42]: Test Project 2
+                - img [ref=e43]
+            - listitem [ref=e45]:
+              - button "Test Project" [ref=e46] [cursor=pointer]:
+                - generic [ref=e48]: Test Project
+                - img [ref=e49]
+            - listitem [ref=e51]:
+              - button "Test Project" [ref=e52] [cursor=pointer]:
+                - generic [ref=e54]: Test Project
+                - img [ref=e55]
+            - listitem [ref=e57]:
+              - button "kanban" [ref=e58] [cursor=pointer]:
+                - generic [ref=e60]: kanban
+                - img [ref=e61]
+            - listitem [ref=e63]:
+              - button "craeting a kanban project" [ref=e64] [cursor=pointer]:
+                - generic [ref=e66]: craeting a kanban project
+                - img [ref=e67]
+            - listitem [ref=e69]:
+              - button "craeting a kanban project" [ref=e70] [cursor=pointer]:
+                - generic [ref=e72]: craeting a kanban project
+                - img [ref=e73]
+      - generic [ref=e75]:
+        - link "Notifications" [ref=e76] [cursor=pointer]:
+          - /url: /notifications
+          - generic [ref=e77]: Notifications
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - paragraph [ref=e80]: superadmin
+            - paragraph [ref=e81]: superadmin
+          - button "Logout" [ref=e82] [cursor=pointer]
+    - main [ref=e83]:
+      - alert [ref=e84]:
+        - img [ref=e85]
+        - generic [ref=e87]: "No PHI:"
+        - generic [ref=e88]: Do not enter patient names, DOB, MRN, or other identifiers
+      - generic [ref=e89]:
+        - heading "Dashboard" [level=1] [ref=e90]
+        - generic [ref=e92]:
+          - button "2 Total Tasks" [pressed] [ref=e93] [cursor=pointer]:
+            - heading "2" [level=3] [ref=e95]
+            - paragraph [ref=e97]: Total Tasks
+          - button "0 Completed" [ref=e98] [cursor=pointer]:
+            - heading "0" [level=3] [ref=e100]
+            - paragraph [ref=e102]: Completed
+          - button "1 Active" [ref=e103] [cursor=pointer]:
+            - heading "1" [level=3] [ref=e105]
+            - paragraph [ref=e107]: Active
+          - button "0 Overdue" [ref=e108] [cursor=pointer]:
+            - heading "0" [level=3] [ref=e110]
+            - paragraph [ref=e112]: Overdue
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - heading "Status Distribution" [level=3] [ref=e117]
+            - generic [ref=e120]:
+              - list [ref=e122]:
+                - listitem [ref=e123]:
+                  - img "Active legend icon" [ref=e124]
+                  - text: Active
+                - listitem [ref=e126]:
+                  - img "Backlog legend icon" [ref=e127]
+                  - text: Backlog
+              - application [ref=e129]
+          - generic [ref=e139]:
+            - heading "Priority Distribution" [level=3] [ref=e141]
+            - application [ref=e145]:
+              - generic [ref=e163]:
+                - generic [ref=e164]:
+                  - generic [ref=e166]: High
+                  - generic [ref=e168]: Medium
+                  - generic [ref=e170]: Low
+                - generic [ref=e171]:
+                  - generic [ref=e173]: "0"
+                  - generic [ref=e175]: "1"
+                  - generic [ref=e177]: "2"
+                  - generic [ref=e179]: "3"
+                  - generic [ref=e181]: "4"
+        - generic [ref=e182]:
+          - heading "Top Priority Tasks" [level=2] [ref=e184]
+          - generic [ref=e185]:
+            - generic [ref=e186] [cursor=pointer]:
+              - generic [ref=e188]: High
+              - heading "Test Task - Verify Kanban Creation" [level=3] [ref=e189]
+            - generic [ref=e190] [cursor=pointer]:
+              - generic [ref=e192]: Medium
+              - heading "project" [level=3] [ref=e193]
+              - generic [ref=e195]:
+                - img [ref=e196]
+                - text: Invalid Date
+        - generic [ref=e198]:
+          - generic [ref=e199]:
+            - heading "Project Progress" [level=2] [ref=e200]
+            - generic [ref=e201]:
+              - button "New Folder" [ref=e202] [cursor=pointer]:
+                - img
+                - text: New Folder
+              - button "New Project" [ref=e203] [cursor=pointer]:
+                - img
+                - text: New Project
+          - generic [ref=e205]:
+            - generic [ref=e206]:
+              - heading "No Folder" [level=3] [ref=e208]
+              - generic [ref=e209]: (7 projects)
+            - generic [ref=e210]:
+              - generic [ref=e211]:
+                - generic "Test Project Fix" [ref=e213]
+                - progressbar [ref=e214]
+                - generic [ref=e216]: 0/0 tasks
+                - generic [ref=e217]:
+                  - button "Edit project Test Project Fix" [ref=e218] [cursor=pointer]:
+                    - img
+                  - button "Delete project Test Project Fix" [ref=e219] [cursor=pointer]:
+                    - img
+              - generic [ref=e220]:
+                - generic "Test Project 2" [ref=e222]
+                - progressbar [ref=e223]
+                - generic [ref=e225]: 0/0 tasks
+                - generic [ref=e226]:
+                  - button "Edit project Test Project 2" [ref=e227] [cursor=pointer]:
+                    - img
+                  - button "Delete project Test Project 2" [ref=e228] [cursor=pointer]:
+                    - img
+              - generic [ref=e229]:
+                - generic "Test Project" [ref=e231]
+                - progressbar [ref=e232]
+                - generic [ref=e234]: 0/0 tasks
+                - generic [ref=e235]:
+                  - button "Edit project Test Project" [ref=e236] [cursor=pointer]:
+                    - img
+                  - button "Delete project Test Project" [ref=e237] [cursor=pointer]:
+                    - img
+              - generic [ref=e238]:
+                - generic "Test Project" [ref=e240]
+                - progressbar [ref=e241]
+                - generic [ref=e243]: 0/0 tasks
+                - generic [ref=e244]:
+                  - button "Edit project Test Project" [ref=e245] [cursor=pointer]:
+                    - img
+                  - button "Delete project Test Project" [ref=e246] [cursor=pointer]:
+                    - img
+              - generic [ref=e247]:
+                - generic "kanban" [ref=e249]
+                - progressbar [ref=e250]
+                - generic [ref=e252]: 0/2 tasks
+                - generic [ref=e253]:
+                  - button "Edit project kanban" [ref=e254] [cursor=pointer]:
+                    - img
+                  - button "Delete project kanban" [ref=e255] [cursor=pointer]:
+                    - img
+              - generic [ref=e256]:
+                - generic "craeting a kanban project" [ref=e258]
+                - progressbar [ref=e259]
+                - generic [ref=e261]: 0/0 tasks
+                - generic [ref=e262]:
+                  - button "Edit project craeting a kanban project" [ref=e263] [cursor=pointer]:
+                    - img
+                  - button "Delete project craeting a kanban project" [ref=e264] [cursor=pointer]:
+                    - img
+              - generic [ref=e265]:
+                - generic "craeting a kanban project" [ref=e267]
+                - progressbar [ref=e268]
+                - generic [ref=e270]: 0/0 tasks
+                - generic [ref=e271]:
+                  - button "Edit project craeting a kanban project" [ref=e272] [cursor=pointer]:
+                    - img
+                  - button "Delete project craeting a kanban project" [ref=e273] [cursor=pointer]:
+                    - img
+  - generic [ref=e274]: "0"

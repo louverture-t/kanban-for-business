@@ -1,0 +1,159 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - link:
+            - /url: /
+            - text: K4B
+        - navigation:
+          - list:
+            - listitem:
+              - link:
+                - /url: /
+                - text: Dashboard
+          - generic:
+            - generic:
+              - heading [level=3]: Projects
+              - button:
+                - img
+            - list:
+              - listitem:
+                - button:
+                  - generic: kanban
+                  - img
+                - list:
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/kanban
+                      - text: Kanban
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/priority
+                      - text: Priority
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/roadmap
+                      - text: Roadmap
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/team
+                      - text: Team
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+        - generic:
+          - link:
+            - /url: /notifications
+            - generic: Notifications
+          - generic:
+            - generic:
+              - paragraph: admin
+              - paragraph: manager
+            - button: Logout
+      - main:
+        - alert:
+          - img
+          - generic: "No PHI:"
+          - generic: Do not enter patient names, DOB, MRN, or other identifiers
+        - generic:
+          - generic:
+            - heading [level=1]: Kanban Board
+            - generic:
+              - button:
+                - img
+                - text: AI Decompose
+              - button:
+                - img
+                - text: Show Archived
+              - button:
+                - img
+                - text: Show Trash
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Backlog
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Backlog
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Active
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Active
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Review
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Review
+              - generic:
+                - paragraph: No tasks
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Complete
+                  - generic: "0"
+                - button:
+                  - img
+                  - generic: Add task to Complete
+              - generic:
+                - paragraph: No tasks
+  - dialog "New Task" [ref=e124]:
+    - generic [ref=e125]:
+      - heading "New Task" [level=2] [ref=e126]
+      - paragraph [ref=e127]: Fill in the details to create a new task.
+    - generic [ref=e129]:
+      - generic [ref=e130]:
+        - generic [ref=e131]: Title *
+        - textbox "Title *" [active] [ref=e132]:
+          - /placeholder: Task title
+      - generic [ref=e133]:
+        - generic [ref=e134]: Description
+        - textbox "Description" [ref=e135]:
+          - /placeholder: Describe this task...
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - generic [ref=e138]: Status
+          - combobox [ref=e139] [cursor=pointer]:
+            - generic: Backlog
+            - img [ref=e140]
+        - generic [ref=e142]:
+          - generic [ref=e143]: Priority
+          - combobox [ref=e144] [cursor=pointer]:
+            - generic: Medium
+            - img [ref=e145]
+      - generic [ref=e147]:
+        - generic [ref=e148]: Assignee
+        - combobox [ref=e149] [cursor=pointer]:
+          - generic: Unassigned
+          - img [ref=e150]
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - generic [ref=e154]: Start date
+          - textbox "Start date" [ref=e155]
+        - generic [ref=e156]:
+          - generic [ref=e157]: Due date
+          - textbox "Due date" [ref=e158]
+    - generic [ref=e159]:
+      - button "Cancel" [ref=e160] [cursor=pointer]
+      - button "Create Task" [ref=e161] [cursor=pointer]
+    - button "Close" [ref=e162] [cursor=pointer]:
+      - img [ref=e163]
+      - generic [ref=e166]: Close

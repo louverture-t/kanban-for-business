@@ -1,0 +1,121 @@
+- generic [ref=e3]:
+  - complementary [ref=e5]:
+    - link "K4B" [ref=e7] [cursor=pointer]:
+      - /url: /
+    - navigation [ref=e8]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "Dashboard" [ref=e11] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=e12]:
+          - link "Admin" [ref=e13] [cursor=pointer]:
+            - /url: /admin
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - heading "Projects" [level=3] [ref=e16]
+          - button "New Project" [ref=e17] [cursor=pointer]:
+            - img
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - button "Test Project Fix" [ref=e20] [cursor=pointer]:
+              - generic [ref=e22]: Test Project Fix
+              - img [ref=e23]
+          - listitem [ref=e25]:
+            - button "Test Project 2" [ref=e26] [cursor=pointer]:
+              - generic [ref=e28]: Test Project 2
+              - img [ref=e29]
+          - listitem [ref=e31]:
+            - button "Test Project" [ref=e32] [cursor=pointer]:
+              - generic [ref=e34]: Test Project
+              - img [ref=e35]
+          - listitem [ref=e37]:
+            - button "Test Project" [ref=e38] [cursor=pointer]:
+              - generic [ref=e40]: Test Project
+              - img [ref=e41]
+          - listitem [ref=e43]:
+            - button "kanban" [ref=e44] [cursor=pointer]:
+              - generic [ref=e46]: kanban
+              - img [ref=e47]
+            - list [ref=e49]:
+              - listitem [ref=e50]:
+                - link "Kanban" [ref=e51] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/kanban
+              - listitem [ref=e52]:
+                - link "Priority" [ref=e53] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/priority
+              - listitem [ref=e54]:
+                - link "Roadmap" [ref=e55] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/roadmap
+              - listitem [ref=e56]:
+                - link "Team" [ref=e57] [cursor=pointer]:
+                  - /url: /project/69d3b45bcd85533a008790fe/team
+          - listitem [ref=e58]:
+            - button "craeting a kanban project" [ref=e59] [cursor=pointer]:
+              - generic [ref=e61]: craeting a kanban project
+              - img [ref=e62]
+          - listitem [ref=e64]:
+            - button "craeting a kanban project" [ref=e65] [cursor=pointer]:
+              - generic [ref=e67]: craeting a kanban project
+              - img [ref=e68]
+    - generic [ref=e70]:
+      - link "Notifications" [ref=e71] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=e72]: Notifications
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - paragraph [ref=e75]: superadmin
+          - paragraph [ref=e76]: superadmin
+        - button "Logout" [ref=e77] [cursor=pointer]
+  - main [ref=e78]:
+    - alert [ref=e79]:
+      - img [ref=e80]
+      - generic [ref=e82]: "No PHI:"
+      - generic [ref=e83]: Do not enter patient names, DOB, MRN, or other identifiers
+    - generic [ref=e84]:
+      - generic [ref=e85]:
+        - heading "Roadmap" [level=1] [ref=e86]
+        - generic [ref=e87]:
+          - button "Month" [ref=e88] [cursor=pointer]
+          - button "Quarter" [ref=e89] [cursor=pointer]
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - button "Previous" [ref=e93] [cursor=pointer]: ‹
+            - generic [ref=e94]:
+              - generic [ref=e95]: April 2026
+              - button "Today" [ref=e96] [cursor=pointer]
+            - button "Next" [ref=e97] [cursor=pointer]: ›
+          - generic [ref=e100]: project
+        - generic [ref=e101]:
+          - generic [ref=e103]:
+            - generic [ref=e104]: "1"
+            - generic [ref=e105]: "2"
+            - generic [ref=e106]: "3"
+            - generic [ref=e107]: "4"
+            - generic [ref=e108]: "5"
+            - generic [ref=e109]: "6"
+            - generic [ref=e110]: "7"
+            - generic [ref=e111]: "8"
+            - generic [ref=e112]: "9"
+            - generic [ref=e113]: "10"
+            - generic [ref=e114]: "11"
+            - generic [ref=e115]: "12"
+            - generic [ref=e116]: "13"
+            - generic [ref=e117]: "14"
+            - generic [ref=e118]: "15"
+            - generic [ref=e119]: "16"
+            - generic [ref=e120]: "17"
+            - generic [ref=e121]: "18"
+            - generic [ref=e122]: "19"
+            - generic [ref=e123]: "20"
+            - generic [ref=e124]: "21"
+            - generic [ref=e125]: "22"
+            - generic [ref=e126]: "23"
+            - generic [ref=e127]: "24"
+            - generic [ref=e128]: "25"
+            - generic [ref=e129]: "26"
+            - generic [ref=e130]: "27"
+            - generic [ref=e131]: "28"
+            - generic [ref=e132]: "29"
+            - generic [ref=e133]: "30"
+          - button "project" [ref=e136] [cursor=pointer]

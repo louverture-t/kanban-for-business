@@ -1,17 +1,23 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
 
 import { TaskDialog } from '@client/components/task-dialog';
+import * as useAuthHook from '@client/hooks/use-auth';
 import {
   CREATE_TASK_MUTATION,
   TASK_QUERY,
   SUBTASKS_QUERY,
   COMMENTS_QUERY,
+  CREATE_COMMENT_MUTATION,
+  DELETE_COMMENT_MUTATION,
   TASK_TAGS_QUERY,
   TAGS_QUERY,
+  ADD_TAG_TO_TASK_MUTATION,
+  REMOVE_TAG_FROM_TASK_MUTATION,
+  CREATE_TAG_MUTATION,
   AUDIT_LOGS_QUERY,
   PROJECT_MEMBERS_QUERY,
   TASKS_QUERY,
@@ -76,17 +82,19 @@ const mockUser = {
 };
 
 vi.mock('@client/hooks/use-auth', () => ({
-  useAuth: () => ({
-    user: mockUser,
-    isManagerOrAbove: true,
-    isSuperadmin: false,
-    isAuthenticated: true,
-    loading: false,
-    login: vi.fn(),
-    logout: vi.fn(),
-    refetchUser: vi.fn(),
-  }),
+  useAuth: vi.fn(),
 }));
+
+const defaultAuthState = {
+  user: mockUser,
+  isManagerOrAbove: true,
+  isSuperadmin: false,
+  isAuthenticated: true,
+  loading: false,
+  login: vi.fn(),
+  logout: vi.fn(),
+  refetchUser: vi.fn(),
+};
 
 vi.mock('@client/hooks/use-toast', () => ({
   toast: vi.fn(),
@@ -172,7 +180,7 @@ function renderDialog(
       : [...makeCreateMocks(), ...extraMocks];
 
   const result = render(
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
       <TaskDialog
         open={true}
         onOpenChange={onOpenChange}
@@ -190,6 +198,10 @@ function renderDialog(
 // ─── Tests ──────────────────────────────────────────────────
 
 describe('TaskDialog', () => {
+  beforeEach(() => {
+    vi.mocked(useAuthHook.useAuth).mockReturnValue(defaultAuthState);
+  });
+
   describe('create mode', () => {
     it('shows "New Task" title', () => {
       renderDialog('create');
@@ -331,6 +343,344 @@ describe('TaskDialog', () => {
       });
 
       expect(screen.getByLabelText('Description')).toHaveValue('Some description');
+    });
+
+    it('hides Save Changes and Move to Trash for non-owner non-manager', async () => {
+      vi.mocked(useAuthHook.useAuth).mockReturnValue({
+        user: {
+          _id: 'other-user-id',
+          username: 'alice',
+          email: 'alice@test.com',
+          role: UserRole.USER,
+          active: true,
+          failedAttempts: 0,
+          mustChangePassword: false,
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z',
+        },
+        isManagerOrAbove: false,
+        isSuperadmin: false,
+        isAuthenticated: true,
+        loading: false,
+        login: vi.fn(),
+        logout: vi.fn(),
+        refetchUser: vi.fn(),
+      });
+
+      // Task is owned by 'task-owner-id', not 'other-user-id'
+      const mocks = makeEditMocks().map((m) =>
+        m.request.query === TASK_QUERY
+          ? { ...m, result: { data: { task: { ...editTask, createdBy: 'task-owner-id' } } } }
+          : m,
+      );
+
+      render(
+        <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+          <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+        </MockedProvider>,
+      );
+
+      // Wait for dialog to load
+      await waitFor(() => {
+        expect(screen.getByText('Edit Task')).toBeInTheDocument();
+      });
+
+      // Move to Trash should not be present
+      expect(screen.queryByRole('button', { name: /move to trash/i })).not.toBeInTheDocument();
+
+      // Save Changes should be disabled
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      expect(saveButton).toBeDisabled();
+    });
+
+    describe('activity tab', () => {
+      it('renders audit log entries with action and actor', async () => {
+        const log = {
+          _id: 'log-1',
+          taskId,
+          action: 'created task',
+          userId: 'user-1',
+          userName: 'joe',
+          changes: null,
+          createdAt: new Date(Date.now() - 3_600_000).toISOString(), // 1h ago
+        };
+
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === AUDIT_LOGS_QUERY
+            ? { ...m, result: { data: { auditLogs: [log] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('joe')).toBeInTheDocument();
+        });
+        expect(screen.getByText('created task')).toBeInTheDocument();
+        // relative time rendered
+        expect(screen.getByText(/ago|just now/i)).toBeInTheDocument();
+      });
+
+      it('renders changes summary when available', async () => {
+        const log = {
+          _id: 'log-2',
+          taskId,
+          action: 'updated task',
+          userId: 'user-1',
+          userName: 'joe',
+          changes: 'status: BACKLOG → ACTIVE',
+          createdAt: new Date().toISOString(),
+        };
+
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === AUDIT_LOGS_QUERY
+            ? { ...m, result: { data: { auditLogs: [log] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('status: BACKLOG → ACTIVE')).toBeInTheDocument();
+        });
+      });
+
+      it('shows empty state when no logs', async () => {
+        renderDialog('edit');
+
+        await waitFor(() => {
+          expect(screen.getByText(/no activity yet/i)).toBeInTheDocument();
+        });
+      });
+    });
+
+    describe('comments tab', () => {
+      it('renders existing comments with author name and content', async () => {
+        const comment = {
+          _id: 'c-1',
+          taskId,
+          content: 'Great progress!',
+          authorId: 'user-1',
+          author: { _id: 'user-1', username: 'joe' },
+          createdAt: new Date(Date.now() - 3_600_000).toISOString(), // 1h ago
+        };
+
+        const mocks = [
+          ...makeEditMocks().map((m) =>
+            m.request.query === COMMENTS_QUERY
+              ? { ...m, result: { data: { comments: [comment] } } }
+              : m,
+          ),
+        ];
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog
+              open={true}
+              onOpenChange={vi.fn()}
+              mode="edit"
+              taskId={taskId}
+              projectId={projectId}
+            />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('joe')).toBeInTheDocument();
+        });
+        expect(screen.getByText('Great progress!')).toBeInTheDocument();
+        // relative time rendered (some form of "ago" or "just now")
+        expect(screen.getByText(/ago|just now/i)).toBeInTheDocument();
+      });
+
+      it('shows delete button for own comment', async () => {
+        const comment = {
+          _id: 'c-1',
+          taskId,
+          content: 'My comment',
+          authorId: 'user-1', // same as mockUser._id
+          author: { _id: 'user-1', username: 'joe' },
+          createdAt: new Date().toISOString(),
+        };
+
+        const mocks = [
+          ...makeEditMocks().map((m) =>
+            m.request.query === COMMENTS_QUERY
+              ? { ...m, result: { data: { comments: [comment] } } }
+              : m,
+          ),
+        ];
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog
+              open={true}
+              onOpenChange={vi.fn()}
+              mode="edit"
+              taskId={taskId}
+              projectId={projectId}
+            />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('My comment')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: /delete comment/i })).toBeInTheDocument();
+      });
+
+      it('shows delete button for Manager+ on others comments', async () => {
+        const comment = {
+          _id: 'c-2',
+          taskId,
+          content: 'Other user comment',
+          authorId: 'other-user', // different user
+          author: { _id: 'other-user', username: 'alice' },
+          createdAt: new Date().toISOString(),
+        };
+
+        const mocks = [
+          ...makeEditMocks().map((m) =>
+            m.request.query === COMMENTS_QUERY
+              ? { ...m, result: { data: { comments: [comment] } } }
+              : m,
+          ),
+        ];
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog
+              open={true}
+              onOpenChange={vi.fn()}
+              mode="edit"
+              taskId={taskId}
+              projectId={projectId}
+            />
+          </MockedProvider>,
+        );
+
+        // mockUser is MANAGER (isManagerOrAbove=true), so delete button should appear
+        await waitFor(() => {
+          expect(screen.getByText('Other user comment')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: /delete comment/i })).toBeInTheDocument();
+      });
+
+      it('renders textarea for adding comments', async () => {
+        renderDialog('edit');
+
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText(/write a comment/i)).toBeInTheDocument();
+        });
+
+        // Should be a textarea element
+        const commentInput = screen.getByPlaceholderText(/write a comment/i);
+        expect(commentInput.tagName.toLowerCase()).toBe('textarea');
+      });
+
+      it('submits new comment via CREATE_COMMENT_MUTATION', async () => {
+        const { within } = await import('@testing-library/react');
+        const user = userEvent.setup();
+
+        const commentMutationMock: MockedResponse = {
+          request: {
+            query: CREATE_COMMENT_MUTATION,
+            variables: { taskId, content: 'Hello world' },
+          },
+          result: {
+            data: {
+              createComment: {
+                _id: 'c-new',
+                taskId,
+                content: 'Hello world',
+                authorId: 'user-1',
+                author: { _id: 'user-1', username: 'joe' },
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        };
+
+        const refetchMock: MockedResponse = {
+          request: { query: COMMENTS_QUERY, variables: { taskId } },
+          result: { data: { comments: [] } },
+        };
+
+        renderDialog('edit', [commentMutationMock, refetchMock]);
+
+        const textarea = await screen.findByPlaceholderText(/write a comment/i);
+        await user.type(textarea, 'Hello world');
+
+        // The send button has no text label — find it inside the same flex container as the textarea
+        const sendButton = within(textarea.closest('div') as HTMLElement).getByRole('button');
+        await user.click(sendButton);
+
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText(/write a comment/i)).toHaveValue('');
+        });
+      });
+    });
+
+    describe('tags tab', () => {
+      it('renders assigned tags as badges with remove button', async () => {
+        const tag = { _id: 'tag-1', name: 'Urgent', color: '#ef4444' };
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === TASK_TAGS_QUERY
+            ? { ...m, result: { data: { taskTags: [tag] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Urgent')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: /remove tag: urgent/i })).toBeInTheDocument();
+      });
+
+      it('shows unassigned tags in the add-tag dropdown', async () => {
+        const allTag = { _id: 'tag-2', name: 'Low Priority', color: null };
+        const mocks = makeEditMocks().map((m) =>
+          m.request.query === TAGS_QUERY
+            ? { ...m, result: { data: { tags: [allTag] } } }
+            : m,
+        );
+
+        render(
+          <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
+            <TaskDialog open={true} onOpenChange={vi.fn()} mode="edit" taskId={taskId} projectId={projectId} />
+          </MockedProvider>,
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Low Priority')).toBeInTheDocument();
+        });
+      });
+
+      it('renders color picker and name input for new tag creation', async () => {
+        renderDialog('edit');
+
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText(/new tag name/i)).toBeInTheDocument();
+        });
+
+        const colorPicker = screen.getByLabelText(/tag color/i);
+        expect(colorPicker).toBeInTheDocument();
+        expect(colorPicker).toHaveAttribute('type', 'color');
+        expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument();
+      });
     });
   });
 });

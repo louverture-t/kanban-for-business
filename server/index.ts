@@ -8,7 +8,9 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 
+import rateLimit from 'express-rate-limit';
 import { connectDB, PORT, NODE_ENV, CLIENT_ORIGIN } from '@server/config/connection.js';
+import { runArchiveSweep, runPurgeSweep } from '@server/utils/sweeps.js';
 import { buildContext, type GraphQLContext } from '@server/utils/auth.js';
 import typeDefs from '@server/schemas/typeDefs.js';
 import { resolvers } from '@server/resolvers/index.js';
@@ -31,9 +33,25 @@ await server.start();
 app.use(cookieParser());
 
 const corsOptions: cors.CorsOptions = {
-  origin: CLIENT_ORIGIN || true,
+  origin: NODE_ENV === 'production' ? (CLIENT_ORIGIN ?? false) : (CLIENT_ORIGIN ?? true),
   credentials: true,
 };
+
+const generalLimiter = rateLimit({
+  windowMs: NODE_ENV === 'production' ? 15 * 60 * 1000 : 60 * 1000, // 15 min prod / 1 min dev
+  max: NODE_ENV === 'production' ? 200 : 10_000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: NODE_ENV === 'production' ? 20 : 1_000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Upload limit exceeded, please try again later.' },
+});
 
 // Health check (REST)
 app.get('/api/health', (_req, res) => {
@@ -55,7 +73,7 @@ const upload = multer({
   },
 });
 
-app.post('/api/upload', cors(corsOptions), upload.single('file'), async (req, res) => {
+app.post('/api/upload', uploadLimiter, cors(corsOptions), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'No file uploaded' });
@@ -87,6 +105,7 @@ app.post('/api/upload', cors(corsOptions), upload.single('file'), async (req, re
 // GraphQL endpoint
 app.use(
   '/graphql',
+  generalLimiter,
   cors<cors.CorsRequest>(corsOptions),
   express.json(),
   expressMiddleware(server, {
@@ -94,18 +113,10 @@ app.use(
   }),
 );
 
-// --- Sweep intervals (stubs until models exist) ---
-function archiveSweep(): void {
-  // Auto-archive tasks complete 7+ days — implemented with Task model
-}
-
-function purgeSweep(): void {
-  // Auto-purge trashed 7+ days, archived 30+ days — implemented with Task model
-}
-
+// --- Sweep intervals ---
 const ONE_HOUR = 60 * 60 * 1000;
-setInterval(archiveSweep, ONE_HOUR);
-setInterval(purgeSweep, ONE_HOUR);
+setInterval(() => runArchiveSweep().catch((err) => console.error('archiveSweep error:', err)), ONE_HOUR);
+setInterval(() => runPurgeSweep().catch((err) => console.error('purgeSweep error:', err)), ONE_HOUR);
 
 // --- Vite (dev) or static (prod) ---
 if (NODE_ENV === 'development') {

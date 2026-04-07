@@ -1,0 +1,198 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - link:
+            - /url: /
+            - text: K4B
+        - navigation:
+          - list:
+            - listitem:
+              - link:
+                - /url: /
+                - text: Dashboard
+            - listitem:
+              - link:
+                - /url: /admin
+                - text: Admin
+          - generic:
+            - generic:
+              - heading [level=3]: Projects
+              - button:
+                - img
+            - list:
+              - listitem:
+                - button:
+                  - generic: Test Project Fix
+                  - img
+              - listitem:
+                - button:
+                  - generic: Test Project 2
+                  - img
+              - listitem:
+                - button:
+                  - generic: Test Project
+                  - img
+              - listitem:
+                - button:
+                  - generic: Test Project
+                  - img
+              - listitem:
+                - button:
+                  - generic: kanban
+                  - img
+                - list:
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/kanban
+                      - text: Kanban
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/priority
+                      - text: Priority
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/roadmap
+                      - text: Roadmap
+                  - listitem:
+                    - link:
+                      - /url: /project/69d3b45bcd85533a008790fe/team
+                      - text: Team
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+              - listitem:
+                - button:
+                  - generic: craeting a kanban project
+                  - img
+        - generic:
+          - link:
+            - /url: /notifications
+            - generic: Notifications
+          - generic:
+            - generic:
+              - paragraph: superadmin
+              - paragraph: superadmin
+            - button: Logout
+      - main:
+        - alert:
+          - img
+          - generic: "No PHI:"
+          - generic: Do not enter patient names, DOB, MRN, or other identifiers
+        - generic:
+          - generic:
+            - heading [level=1]: Roadmap
+            - generic:
+              - button: Month
+              - button: Quarter
+          - generic:
+            - generic:
+              - generic:
+                - button: ‹
+                - generic:
+                  - generic: April 2026
+                  - button: Today
+                - button: ›
+              - generic:
+                - generic: project
+            - generic:
+              - generic:
+                - generic:
+                  - generic: "1"
+                  - generic: "2"
+                  - generic: "3"
+                  - generic: "4"
+                  - generic: "5"
+                  - generic: "6"
+                  - generic: "7"
+                  - generic: "8"
+                  - generic: "9"
+                  - generic: "10"
+                  - generic: "11"
+                  - generic: "12"
+                  - generic: "13"
+                  - generic: "14"
+                  - generic: "15"
+                  - generic: "16"
+                  - generic: "17"
+                  - generic: "18"
+                  - generic: "19"
+                  - generic: "20"
+                  - generic: "21"
+                  - generic: "22"
+                  - generic: "23"
+                  - generic: "24"
+                  - generic: "25"
+                  - generic: "26"
+                  - generic: "27"
+                  - generic: "28"
+                  - generic: "29"
+                  - generic: "30"
+              - generic:
+                - generic:
+                  - button: project
+  - dialog "Edit Task" [ref=e138]:
+    - generic [ref=e139]:
+      - heading "Edit Task" [level=2] [ref=e140]
+      - paragraph [ref=e141]: Update task details, manage subtasks, comments, and tags.
+    - generic [ref=e143]:
+      - tablist [ref=e144]:
+        - tab "Details" [selected] [ref=e145] [cursor=pointer]
+        - tab "Subtasks" [ref=e146] [cursor=pointer]:
+          - img [ref=e147]
+          - text: Subtasks
+        - tab "Comments" [ref=e150] [cursor=pointer]:
+          - img [ref=e151]
+          - text: Comments
+        - tab "Tags" [ref=e153] [cursor=pointer]:
+          - img [ref=e154]
+          - text: Tags
+        - tab "Activity" [ref=e157] [cursor=pointer]:
+          - img [ref=e158]
+          - text: Activity
+      - tabpanel "Details" [ref=e160]:
+        - generic [ref=e161]:
+          - generic [ref=e162]:
+            - generic [ref=e163]: Title *
+            - textbox "Title *" [active] [ref=e164]:
+              - /placeholder: Task title
+              - text: project
+          - generic [ref=e165]:
+            - generic [ref=e166]: Description
+            - textbox "Description" [ref=e167]:
+              - /placeholder: Describe this task...
+              - text: ucf
+          - generic [ref=e168]:
+            - generic [ref=e169]:
+              - generic [ref=e170]: Status
+              - combobox [ref=e171] [cursor=pointer]:
+                - generic: Active
+                - img [ref=e172]
+            - generic [ref=e174]:
+              - generic [ref=e175]: Priority
+              - combobox [ref=e176] [cursor=pointer]:
+                - generic: Medium
+                - img [ref=e177]
+          - generic [ref=e179]:
+            - generic [ref=e180]: Assignee
+            - combobox [ref=e181] [cursor=pointer]:
+              - generic: Unassigned
+              - img [ref=e182]
+          - generic [ref=e184]:
+            - generic [ref=e185]:
+              - generic [ref=e186]: Start date
+              - textbox "Start date" [ref=e187]: 2026-04-08
+            - generic [ref=e188]:
+              - generic [ref=e189]: Due date
+              - textbox "Due date" [ref=e190]: 2026-04-15
+    - generic [ref=e191]:
+      - button "Move to Trash" [ref=e192] [cursor=pointer]:
+        - img
+        - text: Move to Trash
+      - button "Cancel" [ref=e193] [cursor=pointer]
+      - button "Save Changes" [ref=e194] [cursor=pointer]
+    - button "Close" [ref=e195] [cursor=pointer]:
+      - img [ref=e196]
+      - generic [ref=e199]: Close

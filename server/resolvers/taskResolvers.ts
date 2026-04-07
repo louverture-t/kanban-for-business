@@ -15,10 +15,12 @@ import {
   requireAuth,
   requireSuperadmin,
   requireProjectAccess,
+  requireManagerOrAbove,
   type GraphQLContext,
 } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
+import { runArchiveSweep, runPurgeSweep } from '@server/utils/sweeps.js';
 
 export interface TaskInput {
   projectId?: string;
@@ -52,7 +54,7 @@ export const taskResolvers = {
         filter.archivedAt = null;
       }
 
-      return Task.find(filter).sort({ position: 1 });
+      return Task.find(filter).sort({ position: 1 }).exec();
     },
 
     task: async (
@@ -76,16 +78,23 @@ export const taskResolvers = {
       args: { query: string },
       context: GraphQLContext,
     ) => {
-      requireAuth(context);
+      const user = requireAuth(context);
 
       if (!args.query.trim()) {
         throw new ValidationError('Search query cannot be empty');
       }
 
-      return Task.find({
+      const filter: Record<string, unknown> = {
         $text: { $search: args.query },
         deletedAt: null,
-      }).sort({ score: { $meta: 'textScore' } });
+      };
+
+      if (user.role !== 'superadmin') {
+        const memberships = await ProjectMember.find({ userId: user.id });
+        filter.projectId = { $in: memberships.map((m) => m.projectId) };
+      }
+
+      return Task.find(filter).sort({ score: { $meta: 'textScore' } }).exec();
     },
 
     trashedTasks: async (
@@ -96,7 +105,7 @@ export const taskResolvers = {
       const user = requireAuth(context);
 
       if (user.role === 'superadmin') {
-        return Task.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+        return Task.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 }).exec();
       }
 
       // Non-superadmin: only tasks in projects they belong to
@@ -106,7 +115,7 @@ export const taskResolvers = {
       return Task.find({
         deletedAt: { $ne: null },
         projectId: { $in: projectIds },
-      }).sort({ deletedAt: -1 });
+      }).sort({ deletedAt: -1 }).exec();
     },
   },
 
@@ -177,6 +186,13 @@ export const taskResolvers = {
       }
 
       await requireProjectAccess(context, String(task.projectId));
+
+      // Owner-or-Manager+ guard: only assignee, creator, or Manager+ can update
+      const isAssignee = task.assigneeId && String(task.assigneeId) === user.id;
+      const isCreator = task.createdBy && String(task.createdBy) === user.id;
+      if (!isAssignee && !isCreator) {
+        requireManagerOrAbove(context);
+      }
 
       const changes: Record<string, { from: unknown; to: unknown }> = {};
       const update: Record<string, unknown> = {};
@@ -321,7 +337,7 @@ export const taskResolvers = {
         args.id,
         { $unset: { deletedAt: 1 } },
         { new: true },
-      );
+      ).exec();
     },
 
     unarchiveTask: async (
@@ -342,7 +358,7 @@ export const taskResolvers = {
         args.id,
         { $unset: { archivedAt: 1 } },
         { new: true },
-      );
+      ).exec();
     },
 
     archiveSweep: async (
@@ -351,20 +367,7 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       requireSuperadmin(context);
-
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-      const result = await Task.updateMany(
-        {
-          status: 'complete',
-          completedAt: { $lt: sevenDaysAgo },
-          archivedAt: null,
-          deletedAt: null,
-        },
-        { archivedAt: new Date() },
-      );
-
-      return result.modifiedCount;
+      return runArchiveSweep();
     },
 
     purgeSweep: async (
@@ -373,53 +376,28 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       requireSuperadmin(context);
-
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-      const tasksToPurge = await Task.find({
-        $or: [
-          { deletedAt: { $lt: sevenDaysAgo } },
-          { archivedAt: { $lt: thirtyDaysAgo } },
-        ],
-      }).select('_id');
-
-      const taskIds = tasksToPurge.map((t) => t._id);
-
-      if (taskIds.length === 0) {
-        return 0;
-      }
-
-      // Cascade delete related documents
-      await Promise.all([
-        Subtask.deleteMany({ taskId: { $in: taskIds } }),
-        Comment.deleteMany({ taskId: { $in: taskIds } }),
-        TaskTag.deleteMany({ taskId: { $in: taskIds } }),
-      ]);
-
-      const result = await Task.deleteMany({ _id: { $in: taskIds } });
-      return result.deletedCount;
+      return runPurgeSweep();
     },
   },
 
   Task: {
-    project: (task: ITask) => Project.findById(task.projectId),
+    project: (task: ITask) => Project.findById(task.projectId).exec(),
 
     assignee: (task: ITask) =>
-      task.assigneeId ? User.findById(task.assigneeId) : null,
+      task.assigneeId ? User.findById(task.assigneeId).exec() : null,
 
     createdByUser: (task: ITask) =>
-      task.createdBy ? User.findById(task.createdBy) : null,
+      task.createdBy ? User.findById(task.createdBy).exec() : null,
 
-    subtasks: (task: ITask) => Subtask.find({ taskId: task._id }),
+    subtasks: (task: ITask) => Subtask.find({ taskId: task._id }).exec(),
 
-    comments: (task: ITask) => Comment.find({ taskId: task._id }),
+    comments: (task: ITask) => Comment.find({ taskId: task._id }).exec(),
 
     tags: async (task: ITask) => {
-      const taskTags = await TaskTag.find({ taskId: task._id });
+      const taskTags = await TaskTag.find({ taskId: task._id }).exec();
       const tagIds = taskTags.map((tt) => tt.tagId);
       if (tagIds.length === 0) return [];
-      return Tag.find({ _id: { $in: tagIds } });
+      return Tag.find({ _id: { $in: tagIds } }).exec();
     },
   },
 };

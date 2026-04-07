@@ -1,4 +1,4 @@
-import { Task, AuditLog } from '@server/models/index.js';
+import { Task, AuditLog, Notification } from '@server/models/index.js';
 import {
   requireManagerOrAbove,
   requireProjectAccess,
@@ -6,12 +6,12 @@ import {
   type TokenPayload,
 } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
-import { OPENROUTER_API_KEY } from '@server/config/connection.js';
+import { OPENROUTER_API_KEY, NODE_ENV } from '@server/config/connection.js';
 
 // --- Rate limiting: in-memory per-user AI call tracker ---
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = NODE_ENV === 'production' ? 10 : 1_000;
 
 function checkRateLimit(userId: string): void {
   const now = Date.now();
@@ -156,6 +156,12 @@ export const aiResolvers = {
 
         createdTasks.push(task);
       }
+
+      await Notification.create({
+        userId,
+        type: 'ai_complete',
+        content: `AI created ${createdTasks.length} task${createdTasks.length === 1 ? '' : 's'} successfully`,
+      });
 
       return createdTasks;
     },

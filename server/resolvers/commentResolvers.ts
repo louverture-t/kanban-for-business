@@ -15,7 +15,7 @@ export const commentResolvers = {
       context: GraphQLContext,
     ) => {
       requireAuth(context);
-      return Comment.find({ taskId: args.taskId }).sort({ createdAt: 1 });
+      return Comment.find({ taskId: args.taskId }).sort({ createdAt: 1 }).exec();
     },
 
     auditLogs: async (
@@ -24,7 +24,7 @@ export const commentResolvers = {
       context: GraphQLContext,
     ) => {
       requireAuth(context);
-      return AuditLog.find({ taskId: args.taskId }).sort({ createdAt: -1 });
+      return AuditLog.find({ taskId: args.taskId }).sort({ createdAt: -1 }).exec();
     },
   },
 
@@ -106,7 +106,7 @@ export const commentResolvers = {
 
   Comment: {
     author: async (parent: { authorId: string }) => {
-      return User.findById(parent.authorId);
+      return User.findById(parent.authorId).exec();
     },
   },
 };

@@ -1,158 +1,425 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import type { DropResult } from '@hello-pangea/dnd';
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from '@hello-pangea/dnd';
+import {
+  Plus,
+  Archive,
+  Trash2,
+  RotateCcw,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+} from 'lucide-react';
 
-import { TASKS_QUERY, ARCHIVE_SWEEP_MUTATION } from '@client/graphql/operations';
+import type { ITask } from '@shared/types';
+import { TaskStatus } from '@shared/types';
+import { cn } from '@client/lib/utils';
+import { Button } from '@client/components/ui/button';
+import { Badge } from '@client/components/ui/badge';
 import { TaskCard } from '@client/components/task-card';
 import { TaskDialog } from '@client/components/task-dialog';
-import { Badge } from '@client/components/ui/badge';
-import { Button } from '@client/components/ui/button';
-import { TaskStatus } from '@shared/types';
-import type { ITask } from '@shared/types';
+import { AiDecomposeDialog } from '@client/components/ai-decompose-dialog';
+import { useAuth } from '@client/hooks/use-auth';
+import { useToast } from '@client/hooks/use-toast';
+import {
+  TASKS_QUERY,
+  UPDATE_TASK_MUTATION,
+  RESTORE_TASK_MUTATION,
+  UNARCHIVE_TASK_MUTATION,
+  ARCHIVE_SWEEP_MUTATION,
+  TRASHED_TASKS_QUERY,
+} from '@client/graphql/operations';
 
-const COLUMNS: { status: TaskStatus; label: string }[] = [
-  { status: TaskStatus.BACKLOG, label: 'Backlog' },
-  { status: TaskStatus.ACTIVE, label: 'Active' },
-  { status: TaskStatus.REVIEW, label: 'Review' },
-  { status: TaskStatus.COMPLETE, label: 'Complete' },
-];
+// ─── Column config ──────────────────────────────────────────
+
+const COLUMNS = [
+  { status: TaskStatus.BACKLOG, label: 'Backlog', color: 'bg-slate-500' },
+  { status: TaskStatus.ACTIVE, label: 'Active', color: 'bg-blue-500' },
+  { status: TaskStatus.REVIEW, label: 'Review', color: 'bg-amber-500' },
+  { status: TaskStatus.COMPLETE, label: 'Complete', color: 'bg-emerald-500' },
+] as const;
+
+// ─── Kanban Page ────────────────────────────────────────────
 
 export default function KanbanPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const [includeArchived, setIncludeArchived] = useState(false);
-  const [showTrash, setShowTrash] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>();
+  const { isManagerOrAbove } = useAuth();
+  const { toast } = useToast();
 
-  const { data, loading, error } = useQuery(TASKS_QUERY, {
-    variables: { projectId, includeArchived },
+  const [showArchived, setShowArchived] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [decomposeOpen, setDecomposeOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [dialogTaskId, setDialogTaskId] = useState<string | undefined>();
+  const [dialogDefaultStatus, setDialogDefaultStatus] = useState<TaskStatus>(
+    TaskStatus.BACKLOG,
+  );
+
+  // ─── Queries ────────────────────────────────────────────
+
+  const {
+    data: tasksData,
+    loading: tasksLoading,
+    refetch: refetchTasks,
+  } = useQuery(TASKS_QUERY, {
+    variables: { projectId, includeArchived: showArchived },
     skip: !projectId,
   });
 
+  const {
+    data: trashedData,
+    loading: trashedLoading,
+    refetch: refetchTrashed,
+  } = useQuery(TRASHED_TASKS_QUERY, {
+    skip: !showTrash,
+  });
+
+  // ─── Mutations ──────────────────────────────────────────
+
+  const [updateTask] = useMutation(UPDATE_TASK_MUTATION);
+  const [restoreTask] = useMutation(RESTORE_TASK_MUTATION);
+  const [unarchiveTask] = useMutation(UNARCHIVE_TASK_MUTATION);
   const [archiveSweep] = useMutation(ARCHIVE_SWEEP_MUTATION);
 
+  // Run archive sweep once on mount
   useEffect(() => {
     if (projectId) {
-      archiveSweep().catch(() => {});
+      archiveSweep().catch(() => {
+        // Sweep is best-effort; don't block the page
+      });
     }
-  }, [projectId]);
+  }, [projectId, archiveSweep]);
 
-  const onDragEnd = (_result: DropResult) => {
-    // drag-and-drop reordering handled here in full implementation
+  // ─── Task grouping ─────────────────────────────────────
+
+  const allTasks: ITask[] = (tasksData as { tasks?: ITask[] })?.tasks ?? [];
+  const trashedTasks: ITask[] = (trashedData as { trashedTasks?: ITask[] })?.trashedTasks ?? [];
+
+  const tasksByColumn = COLUMNS.map((col) => ({
+    ...col,
+    tasks: allTasks
+      .filter((t) => t.status === col.status && !t.deletedAt)
+      .sort((a, b) => a.position - b.position),
+  }));
+
+  // ─── Drag and drop ─────────────────────────────────────
+
+  const handleDragEnd = useCallback(
+    async (result: DropResult) => {
+      const { source, destination, draggableId } = result;
+      if (!destination) return;
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index === destination.index
+      )
+        return;
+
+      const newStatus = destination.droppableId as TaskStatus;
+      const newPosition = destination.index;
+
+      try {
+        await updateTask({
+          variables: {
+            id: draggableId,
+            input: { status: newStatus, position: newPosition },
+          },
+        });
+        await refetchTasks();
+      } catch {
+        toast({
+          title: 'Move failed',
+          description: 'Could not update task position.',
+          variant: 'destructive',
+        });
+      }
+    },
+    [updateTask, refetchTasks, toast],
+  );
+
+  // ─── Task dialog handlers ──────────────────────────────
+
+  const openCreateDialog = (status: TaskStatus) => {
+    setDialogMode('create');
+    setDialogTaskId(undefined);
+    setDialogDefaultStatus(status);
+    setDialogOpen(true);
   };
 
-  if (loading) {
+  const openEditDialog = (taskId: string) => {
+    setDialogMode('edit');
+    setDialogTaskId(taskId);
+    setDialogOpen(true);
+  };
+
+  const handleDialogSuccess = () => {
+    refetchTasks();
+    if (showTrash) refetchTrashed();
+  };
+
+  // ─── Restore handler ───────────────────────────────────
+
+  const handleRestore = async (taskId: string) => {
+    try {
+      await restoreTask({ variables: { id: taskId } });
+      toast({ title: 'Task restored' });
+      refetchTasks();
+      refetchTrashed();
+    } catch {
+      toast({
+        title: 'Restore failed',
+        description: 'Could not restore the task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // ─── Unarchive handler ─────────────────────────────────
+
+  const handleUnarchive = async (taskId: string) => {
+    try {
+      await unarchiveTask({ variables: { id: taskId } });
+      toast({ title: 'Task unarchived' });
+      refetchTasks();
+    } catch {
+      toast({
+        title: 'Unarchive failed',
+        description: 'Could not unarchive the task.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // ─── Loading state ─────────────────────────────────────
+
+  if (tasksLoading && !tasksData) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-8">
-        <p className="text-destructive">Failed to load tasks</p>
-      </div>
-    );
-  }
-
-  const allTasks: ITask[] = data?.tasks ?? [];
-  const visibleTasks = showTrash
-    ? allTasks.filter((t) => t.deletedAt)
-    : allTasks.filter((t) => !t.deletedAt);
+  // ─── Render ─────────────────────────────────────────────
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Kanban Board</h1>
-        <div className="flex gap-2">
+    <div className="flex flex-col h-full">
+      {/* Header bar */}
+      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b">
+        <h1 className="text-lg font-semibold truncate">Kanban Board</h1>
+
+        <div className="flex items-center gap-2">
+          {isManagerOrAbove && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDecomposeOpen(true)}
+            >
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              AI Decompose
+            </Button>
+          )}
+
           <Button
-            variant="outline"
+            variant={showArchived ? 'secondary' : 'outline'}
             size="sm"
-            onClick={() => setIncludeArchived((prev) => !prev)}
+            onClick={() => setShowArchived((v) => !v)}
           >
-            {includeArchived ? 'Hide Archived' : 'Show Archived'}
+            <Archive className="mr-1.5 h-4 w-4" />
+            {showArchived ? 'Hide Archived' : 'Show Archived'}
           </Button>
+
           <Button
-            variant="outline"
+            variant={showTrash ? 'secondary' : 'outline'}
             size="sm"
-            onClick={() => setShowTrash((prev) => !prev)}
+            onClick={() => setShowTrash((v) => !v)}
           >
+            <Trash2 className="mr-1.5 h-4 w-4" />
             {showTrash ? 'Hide Trash' : 'Show Trash'}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setSelectedTaskId(undefined);
-              setDialogOpen(true);
-            }}
-          >
-            New Task
           </Button>
         </div>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {COLUMNS.map(({ status, label }) => {
-            const columnTasks = visibleTasks
-              .filter((t) => t.status === status)
-              .sort((a, b) => a.position - b.position);
-
-            return (
-              <div key={status} className="w-72 flex-shrink-0">
-                <div className="mb-3 flex items-center gap-2">
-                  <h2 className="font-semibold">{label}</h2>
-                  <Badge variant="secondary">{columnTasks.length}</Badge>
+      {/* Columns */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex flex-1 gap-4 overflow-x-auto p-4 min-h-0">
+          {tasksByColumn.map((col) => (
+            <div
+              key={col.status}
+              className="flex flex-col min-w-[280px] w-full rounded-lg border bg-muted/40"
+            >
+              {/* Column header */}
+              <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn('h-2.5 w-2.5 rounded-full', col.color)}
+                  />
+                  <span className="text-sm font-medium">{col.label}</span>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0 min-w-[20px] justify-center"
+                  >
+                    {col.tasks.length}
+                  </Badge>
                 </div>
 
-                <Droppable droppableId={status}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="min-h-[100px] space-y-2"
-                    >
-                      {columnTasks.map((task, index) => (
-                        <Draggable key={task._id} draggableId={task._id} index={index}>
-                          {(dragProvided) => (
-                            <div
-                              ref={dragProvided.innerRef}
-                              {...dragProvided.draggableProps}
-                              {...dragProvided.dragHandleProps}
-                            >
-                              <TaskCard
-                                task={task}
-                                onClick={() => {
-                                  setSelectedTaskId(task._id);
-                                  setDialogOpen(true);
-                                }}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+                {isManagerOrAbove && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => openCreateDialog(col.status)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="sr-only">
+                      Add task to {col.label}
+                    </span>
+                  </Button>
+                )}
               </div>
-            );
-          })}
+
+              {/* Droppable area */}
+              <Droppable droppableId={col.status}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={cn(
+                      'flex flex-col gap-2 p-2 flex-1 overflow-y-auto transition-colors',
+                      snapshot.isDraggingOver && 'bg-primary/5',
+                    )}
+                  >
+                    {col.tasks.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-8">
+                        No tasks
+                      </p>
+                    )}
+
+                    {col.tasks.map((task, index) => (
+                      <Draggable
+                        key={task._id}
+                        draggableId={task._id}
+                        index={index}
+                      >
+                        {(dragProvided, dragSnapshot) => (
+                          <div
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            {...dragProvided.dragHandleProps}
+                            className={cn(
+                              dragSnapshot.isDragging && 'opacity-90 rotate-1',
+                            )}
+                          >
+                            <TaskCard
+                              task={task}
+                              onClick={() => openEditDialog(task._id)}
+                              onUnarchive={showArchived && task.archivedAt ? () => handleUnarchive(task._id) : undefined}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+          ))}
         </div>
       </DragDropContext>
 
-      <TaskDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        mode={selectedTaskId ? 'edit' : 'create'}
-        taskId={selectedTaskId}
-        projectId={projectId ?? ''}
-        onSuccess={() => setDialogOpen(false)}
-      />
+      {/* Trash panel */}
+      {showTrash && (
+        <div className="border-t">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+            onClick={() => setShowTrash((v) => !v)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Trash
+            <Badge
+              variant="secondary"
+              className="text-[10px] px-1.5 py-0 min-w-[20px] justify-center"
+            >
+              {trashedTasks.length}
+            </Badge>
+            <span className="flex-1" />
+            {showTrash ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+          </button>
+
+          <div className="px-4 pb-4">
+            {trashedLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : trashedTasks.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-6">
+                Trash is empty
+              </p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {trashedTasks.map((task) => (
+                  <div key={task._id} className="relative">
+                    <TaskCard
+                      task={task}
+                      showTrashCountdown
+                      onClick={() => openEditDialog(task._id)}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1 w-full text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRestore(task._id);
+                      }}
+                    >
+                      <RotateCcw className="mr-1.5 h-3 w-3" />
+                      Restore
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Task dialog */}
+      {projectId && (
+        <TaskDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          mode={dialogMode}
+          taskId={dialogTaskId}
+          projectId={projectId}
+          defaultStatus={dialogDefaultStatus}
+          onSuccess={handleDialogSuccess}
+        />
+      )}
+
+      {/* AI Decompose dialog */}
+      {projectId && (
+        <AiDecomposeDialog
+          open={decomposeOpen}
+          onOpenChange={setDecomposeOpen}
+          projectId={projectId}
+          onSuccess={() => refetchTasks()}
+        />
+      )}
     </div>
   );
 }

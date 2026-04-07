@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,10 +16,12 @@ import type { ITask } from '@shared/types';
 
 // ─── Mocks ──────────────────────────────────────────────────
 
+let mockIsManagerOrAbove = true;
+
 vi.mock('@client/hooks/use-auth', () => ({
   useAuth: () => ({
     user: { _id: 'user-1', username: 'joe', role: 'manager' },
-    isManagerOrAbove: true,
+    isManagerOrAbove: mockIsManagerOrAbove,
     isSuperadmin: false,
     isAuthenticated: true,
     loading: false,
@@ -36,6 +38,10 @@ vi.mock('@client/hooks/use-toast', () => ({
 
 vi.mock('@client/components/task-dialog', () => ({
   TaskDialog: () => null,
+}));
+
+vi.mock('@client/components/ai-decompose-dialog', () => ({
+  AiDecomposeDialog: () => null,
 }));
 
 vi.mock('@client/components/task-card', () => {
@@ -125,7 +131,7 @@ function makeBaseMocks(tasks: ITask[] = sampleTasks): MockedResponse[] {
 
 function renderKanban(mocks: MockedResponse[]) {
   return render(
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <MockedProvider mocks={mocks} {...{ addTypename: false } as any}>
       <MemoryRouter initialEntries={[`/projects/${projectId}/kanban`]}>
         <Routes>
           <Route
@@ -141,6 +147,10 @@ function renderKanban(mocks: MockedResponse[]) {
 // ─── Tests ──────────────────────────────────────────────────
 
 describe('KanbanPage', () => {
+  afterEach(() => {
+    mockIsManagerOrAbove = true;
+  });
+
   it('renders four columns with correct headers', async () => {
     renderKanban(makeBaseMocks());
 
@@ -224,5 +234,25 @@ describe('KanbanPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Kanban Board')).toBeInTheDocument();
     });
+  });
+
+  it('shows AI Decompose button for manager', async () => {
+    mockIsManagerOrAbove = true;
+    renderKanban(makeBaseMocks());
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /ai decompose/i })).toBeInTheDocument();
+    });
+  });
+
+  it('hides AI Decompose button for regular user', async () => {
+    mockIsManagerOrAbove = false;
+    renderKanban(makeBaseMocks());
+
+    await waitFor(() => {
+      expect(screen.getByText('Kanban Board')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /ai decompose/i })).not.toBeInTheDocument();
   });
 });

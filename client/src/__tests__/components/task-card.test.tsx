@@ -145,6 +145,38 @@ describe('TaskCard', () => {
       />,
     );
 
-    expect(screen.getByText(/\d+d left/)).toBeInTheDocument();
+    expect(screen.getByText(/Deleted \d+d ago — \d+d until purge/)).toBeInTheDocument();
+  });
+
+  it('calls onUnarchive when Unarchive button is clicked', async () => {
+    const user = userEvent.setup();
+    const handleUnarchive = vi.fn();
+
+    render(
+      <TaskCard
+        task={makeTask({ archivedAt: '2024-01-01T00:00:00Z' })}
+        onUnarchive={handleUnarchive}
+      />,
+    );
+
+    const unarchiveBtn = screen.getByRole('button', { name: /unarchive/i });
+    await user.click(unarchiveBtn);
+    expect(handleUnarchive).toHaveBeenCalledOnce();
+  });
+
+  it('does not render Unarchive button when onUnarchive is not provided', () => {
+    render(
+      <TaskCard task={makeTask({ archivedAt: '2024-01-01T00:00:00Z' })} />,
+    );
+
+    expect(screen.queryByRole('button', { name: /unarchive/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render Unarchive button when task has no archivedAt', () => {
+    render(
+      <TaskCard task={makeTask({ archivedAt: undefined })} onUnarchive={vi.fn()} />,
+    );
+
+    expect(screen.queryByRole('button', { name: /unarchive/i })).not.toBeInTheDocument();
   });
 });

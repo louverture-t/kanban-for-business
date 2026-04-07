@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { Task, Project, ProjectMember, AuditLog } from '@server/models/index.js';
+import { Task, Project, ProjectMember, AuditLog, Notification } from '@server/models/index.js';
 import { aiResolvers } from '@server/resolvers/aiResolvers.js';
 import type { GraphQLContext, TokenPayload } from '@server/utils/auth.js';
 
@@ -48,6 +48,7 @@ beforeEach(async () => {
   await Project.deleteMany({});
   await ProjectMember.deleteMany({});
   await AuditLog.deleteMany({});
+  await Notification.deleteMany({});
   mockFetch.mockReset();
 
   // Create a project and add the manager as a member
@@ -142,6 +143,21 @@ describe('aiConfirmDecomposition mutation', () => {
     const logs = await AuditLog.find({ action: 'CREATE' });
     expect(logs).toHaveLength(1);
     expect(logs[0].changes).toContain('ai-decompose');
+  });
+
+  it('creates an ai_complete notification for the requesting user', async () => {
+    const ctx = mockContext({ user: managerPayload(String(managerId)) });
+
+    await Mutation.aiConfirmDecomposition(
+      null,
+      { projectId, tasks: [{ title: 'Task A' }, { title: 'Task B' }] },
+      ctx,
+    );
+
+    const notifications = await Notification.find({ type: 'ai_complete' });
+    expect(notifications).toHaveLength(1);
+    expect(String(notifications[0].userId)).toBe(String(managerId));
+    expect(notifications[0].content).toContain('2 tasks');
   });
 
   it('requires manager or above role', async () => {

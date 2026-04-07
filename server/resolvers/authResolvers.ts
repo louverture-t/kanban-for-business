@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { User, AuditLog, Invitation } from '@server/models/index.js';
 import {
   signAccessToken,
@@ -13,8 +14,8 @@ import { AuthenticationError, ValidationError } from '@server/utils/errors.js';
 import { validatePassword, validateUsername, sanitizeInput } from '@server/utils/validators.js';
 import { REFRESH_COOKIE_OPTIONS } from '@server/config/cookies.js';
 
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 2 * 60 * 1000; // 15 min prod / 2 min dev
+const MAX_FAILED_ATTEMPTS = process.env.NODE_ENV === 'production' ? 5 : 15;
 
 function toTokenPayload(user: { _id: unknown; username: string; role: string }): TokenPayload {
   return {
@@ -45,7 +46,7 @@ export const authResolvers = {
   Query: {
     me: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const user = requireAuth(context);
-      return User.findById(user.id);
+      return User.findById(user.id).exec();
     },
   },
 
@@ -69,8 +70,14 @@ export const authResolvers = {
       // Check lockout
       if (user.lockedUntil && user.lockedUntil > new Date()) {
         const remaining = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-        throw new AuthenticationError(
+        throw new GraphQLError(
           `Account locked. Try again in ${remaining} minute${remaining !== 1 ? 's' : ''}.`,
+          {
+            extensions: {
+              code: 'ACCOUNT_LOCKED',
+              lockoutMinutes: remaining,
+            },
+          },
         );
       }
 
@@ -220,7 +227,7 @@ export const authResolvers = {
       }
 
       const user = await User.findById(payload.id);
-      if (!user || !user.refreshTokenHash) {
+      if (!user || !user.active || !user.refreshTokenHash) {
         throw new AuthenticationError('Invalid refresh token');
       }
 

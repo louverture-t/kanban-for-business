@@ -66,7 +66,19 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
 
 export const apolloClient = new ApolloClient({
   link: ApolloLink.from([errorLink, authLink, httpLink]),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      User: { keyFields: ['_id'] },
+      Project: { keyFields: ['_id'] },
+      Task: { keyFields: ['_id'] },
+      Subtask: { keyFields: ['_id'] },
+      Comment: { keyFields: ['_id'] },
+      Tag: { keyFields: ['_id'] },
+      Notification: { keyFields: ['_id'] },
+      ProjectMember: { keyFields: ['_id'] },
+      ProjectFolder: { keyFields: ['_id'] },
+    },
+  }),
   defaultOptions: {
     watchQuery: { fetchPolicy: 'cache-and-network' },
   },

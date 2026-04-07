@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { User, Invitation } from '@server/models/index.js';
+import { User, Invitation, AuditLog } from '@server/models/index.js';
 import { requireSuperadmin, type GraphQLContext } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
@@ -11,12 +11,12 @@ export const adminResolvers = {
   Query: {
     adminUsers: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireSuperadmin(context);
-      return User.find().sort({ createdAt: -1 });
+      return User.find().sort({ createdAt: -1 }).exec();
     },
 
     adminInvitations: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireSuperadmin(context);
-      return Invitation.find().sort({ createdAt: -1 });
+      return Invitation.find().sort({ createdAt: -1 }).exec();
     },
   },
 
@@ -32,14 +32,35 @@ export const adminResolvers = {
         throw new ValidationError('Cannot deactivate your own account');
       }
 
-      const update: Record<string, unknown> = {};
-      if (args.role !== undefined) update.role = args.role;
-      if (args.active !== undefined) update.active = args.active;
+      const setFields: Record<string, unknown> = {};
+      if (args.role !== undefined) setFields.role = args.role;
+      if (args.active !== undefined) setFields.active = args.active;
 
-      const user = await User.findByIdAndUpdate(args.id, update, { new: true });
+      const updateOp: Record<string, unknown> = { $set: setFields };
+      if (args.active === false) {
+        updateOp.$unset = { refreshTokenHash: 1 };
+      }
+
+      const user = await User.findByIdAndUpdate(args.id, updateOp, { new: true });
       if (!user) {
         throw new NotFoundError('User not found');
       }
+
+      let action = 'user_updated';
+      if (args.active === false) action = 'user_deactivated';
+      else if (args.active === true) action = 'user_reactivated';
+      else if (args.role !== undefined) action = 'user_role_changed';
+
+      await AuditLog.create({
+        userId: args.id,
+        action,
+        userName: authUser.username,
+        changes: JSON.stringify({
+          ...(args.role !== undefined ? { role: { to: args.role } } : {}),
+          ...(args.active !== undefined ? { active: { to: args.active } } : {}),
+        }),
+        ipAddress: context.req.ip,
+      });
 
       return user;
     },

@@ -1,0 +1,105 @@
+- generic [ref=e1]:
+  - generic [ref=e20]:
+    - complementary [ref=e21]:
+      - link "K4B" [ref=e23] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e24]:
+        - list [ref=e25]:
+          - listitem [ref=e26]:
+            - link "Dashboard" [ref=e27] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e28]:
+            - link "Admin" [ref=e29] [cursor=pointer]:
+              - /url: /admin
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - heading "Projects" [level=3] [ref=e32]
+            - button "New Project" [ref=e33] [cursor=pointer]:
+              - img
+          - list [ref=e34]:
+            - listitem [ref=e35]:
+              - button "Test Project Fix" [ref=e36] [cursor=pointer]:
+                - generic [ref=e38]: Test Project Fix
+                - img [ref=e39]
+              - list [ref=e283]:
+                - listitem [ref=e284]:
+                  - link "Kanban" [ref=e285] [cursor=pointer]:
+                    - /url: /project/69d3bad3a94d9bec16d2efb9/kanban
+                - listitem [ref=e286]:
+                  - link "Priority" [ref=e287] [cursor=pointer]:
+                    - /url: /project/69d3bad3a94d9bec16d2efb9/priority
+                - listitem [ref=e288]:
+                  - link "Roadmap" [ref=e289] [cursor=pointer]:
+                    - /url: /project/69d3bad3a94d9bec16d2efb9/roadmap
+                - listitem [ref=e290]:
+                  - link "Team" [ref=e291] [cursor=pointer]:
+                    - /url: /project/69d3bad3a94d9bec16d2efb9/team
+            - listitem [ref=e41]:
+              - button "Test Project 2" [ref=e42] [cursor=pointer]:
+                - generic [ref=e44]: Test Project 2
+                - img [ref=e45]
+              - list [ref=e323]:
+                - listitem [ref=e324]:
+                  - link "Kanban" [ref=e325] [cursor=pointer]:
+                    - /url: /project/69d3b9bfab101bba25e3d6e6/kanban
+                - listitem [ref=e326]:
+                  - link "Priority" [ref=e327] [cursor=pointer]:
+                    - /url: /project/69d3b9bfab101bba25e3d6e6/priority
+                - listitem [ref=e328]:
+                  - link "Roadmap" [active] [ref=e329] [cursor=pointer]:
+                    - /url: /project/69d3b9bfab101bba25e3d6e6/roadmap
+                - listitem [ref=e330]:
+                  - link "Team" [ref=e331] [cursor=pointer]:
+                    - /url: /project/69d3b9bfab101bba25e3d6e6/team
+            - listitem [ref=e47]:
+              - button "Test Project" [ref=e48] [cursor=pointer]:
+                - generic [ref=e50]: Test Project
+                - img [ref=e51]
+            - listitem [ref=e53]:
+              - button "Test Project" [ref=e54] [cursor=pointer]:
+                - generic [ref=e56]: Test Project
+                - img [ref=e57]
+            - listitem [ref=e59]:
+              - button "kanban" [ref=e60] [cursor=pointer]:
+                - generic [ref=e62]: kanban
+                - img [ref=e63]
+            - listitem [ref=e65]:
+              - button "craeting a kanban project" [ref=e66] [cursor=pointer]:
+                - generic [ref=e68]: craeting a kanban project
+                - img [ref=e69]
+            - listitem [ref=e71]:
+              - button "craeting a kanban project" [ref=e72] [cursor=pointer]:
+                - generic [ref=e74]: craeting a kanban project
+                - img [ref=e75]
+      - generic [ref=e77]:
+        - link "Notifications" [ref=e78] [cursor=pointer]:
+          - /url: /notifications
+          - generic [ref=e79]: Notifications
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - paragraph [ref=e82]: superadmin
+            - paragraph [ref=e83]: superadmin
+          - button "Logout" [ref=e84] [cursor=pointer]
+    - main [ref=e85]:
+      - alert [ref=e86]:
+        - img [ref=e87]
+        - generic [ref=e89]: "No PHI:"
+        - generic [ref=e90]: Do not enter patient names, DOB, MRN, or other identifiers
+      - generic [ref=e292]:
+        - generic [ref=e332]:
+          - heading "Roadmap" [level=1] [ref=e333]
+          - button "Month" [ref=e334] [cursor=pointer]
+          - button "Quarter" [ref=e335] [cursor=pointer]
+          - button "← Prev" [ref=e336] [cursor=pointer]
+          - button "Today" [ref=e337] [cursor=pointer]
+          - button "Next →" [ref=e338] [cursor=pointer]
+        - generic [ref=e342]:
+          - generic [ref=e343]:
+            - generic [ref=e344]: Apr 26
+            - generic [ref=e345]: May 26
+            - generic [ref=e346]: Jun 26
+            - generic [ref=e347]: Jul 26
+            - generic [ref=e348]: Aug 26
+            - generic [ref=e349]: Sep 26
+          - generic [ref=e357]: No tasks with dates assigned
+  - generic [ref=e276]: "0"
