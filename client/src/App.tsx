@@ -6,6 +6,8 @@ import { ThemeProvider } from '@client/components/theme-provider';
 import { AppSidebar } from '@client/components/app-sidebar';
 import { NoPhiBanner } from '@client/components/no-phi-banner';
 import { ErrorBoundary } from '@client/components/error-boundary';
+import { SleepOverlay } from '@client/components/sleep-overlay';
+import { useIdleTimer } from '@client/hooks/use-idle-timer';
 import { SearchCommand } from '@client/components/search-command';
 import { LoginPage } from '@client/pages/login';
 import { RegisterPage } from '@client/pages/register';
@@ -39,6 +41,7 @@ function NotFoundPage() {
 
 function ProtectedRoute() {
   const { isAuthenticated, loading, user } = useAuth();
+  const { isIdle, resetTimer } = useIdleTimer();
 
   if (loading) {
     return (
@@ -65,6 +68,7 @@ function ProtectedRoute() {
         <Outlet />
       </main>
       <SearchCommand />
+      {isIdle && <SleepOverlay resetTimer={resetTimer} />}
     </div>
   );
 }
