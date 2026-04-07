@@ -16,22 +16,22 @@ import {
   AlertDialogTrigger,
 } from '@client/components/ui/alert-dialog';
 import { PROJECTS_QUERY, DELETE_PROJECT_MUTATION, FOLDERS_QUERY } from '@client/graphql/operations';
+import type { IProject, IProjectFolder } from '@shared/types';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 
 const THEME_OPTIONS: { value: Theme; label: string; description: string }[] = [
   { value: 'light', label: 'Light', description: 'Clean white background' },
   { value: 'dark', label: 'Dark', description: 'Easy on the eyes' },
-  { value: 'system', label: 'System', description: 'Follow OS preference' },
 ];
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<{ _id: string; name: string; description?: string } | null>(null);
+  const [editingProject, setEditingProject] = useState<IProject | null>(null);
 
-  const { data, refetch } = useQuery(PROJECTS_QUERY);
-  const { data: foldersData } = useQuery(FOLDERS_QUERY);
+  const { data, refetch } = useQuery<{ projects: IProject[] }>(PROJECTS_QUERY);
+  const { data: foldersData } = useQuery<{ folders: IProjectFolder[] }>(FOLDERS_QUERY);
   const projects = useMemo(() => data?.projects ?? [], [data]);
   const folders = useMemo(() => foldersData?.folders ?? [], [foldersData]);
 
@@ -39,7 +39,7 @@ export function SettingsPage() {
     onCompleted: () => refetch(),
   });
 
-  function openEdit(project: { _id: string; name: string; description?: string }) {
+  function openEdit(project: IProject) {
     setEditingProject(project);
     setProjectDialogOpen(true);
   }
@@ -106,7 +106,7 @@ export function SettingsPage() {
           {projects.length === 0 && (
             <p className="text-sm text-muted-foreground">No projects yet.</p>
           )}
-          {projects.map((project: { _id: string; name: string; description?: string }) => (
+          {projects.map((project) => (
             <div
               key={project._id}
               className="flex items-center justify-between rounded-md border border-border px-3 py-2"

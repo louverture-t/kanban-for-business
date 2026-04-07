@@ -101,7 +101,7 @@ export function AdminPage() {
   const [announcement, setAnnouncement] = useState('');
 
   // ── Users ──
-  const { data: usersData, refetch: refetchUsers } = useQuery(ADMIN_USERS_QUERY);
+  const { data: usersData, refetch: refetchUsers } = useQuery<{ adminUsers: IUserRow[] }>(ADMIN_USERS_QUERY);
   const users = useMemo<IUserRow[]>(() => usersData?.adminUsers ?? [], [usersData]);
 
   const [updateUser] = useMutation(UPDATE_USER_MUTATION, {
@@ -112,7 +112,7 @@ export function AdminPage() {
   });
 
   // ── Invitations ──
-  const { data: invData, refetch: refetchInvitations } = useQuery(ADMIN_INVITATIONS_QUERY);
+  const { data: invData, refetch: refetchInvitations } = useQuery<{ adminInvitations: IInvitationRow[] }>(ADMIN_INVITATIONS_QUERY);
   const invitations = useMemo<IInvitationRow[]>(() => invData?.adminInvitations ?? [], [invData]);
 
   const [invEmail, setInvEmail] = useState('');
@@ -149,13 +149,13 @@ export function AdminPage() {
   }
 
   // ── Membership ──
-  const { data: projectsData } = useQuery(PROJECTS_QUERY);
+  const { data: projectsData } = useQuery<{ projects: IProject[] }>(PROJECTS_QUERY);
   const projects = useMemo<IProject[]>(() => projectsData?.projects ?? [], [projectsData]);
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [addUserId, setAddUserId] = useState('');
 
-  const { data: membersData, refetch: refetchMembers } = useQuery(PROJECT_MEMBERS_QUERY, {
+  const { data: membersData, refetch: refetchMembers } = useQuery<{ projectMembers: IProjectMember[] }>(PROJECT_MEMBERS_QUERY, {
     variables: { projectId: selectedProjectId },
     skip: !selectedProjectId,
   });
