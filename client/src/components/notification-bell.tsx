@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@apollo/client/react';
 import { Bell, UserCheck, MessageSquare, Clock } from 'lucide-react';
 import { MARK_NOTIFICATION_READ, MARK_ALL_NOTIFICATIONS_READ } from '@client/graphql/operations';
@@ -48,7 +47,6 @@ function TypeIcon({ type }: { type: NotificationType }) {
 export function NotificationBell({ notifications, onRefetch }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   const [markRead] = useMutation(MARK_NOTIFICATION_READ);
   const [markAllRead] = useMutation(MARK_ALL_NOTIFICATIONS_READ);
@@ -76,12 +74,9 @@ export function NotificationBell({ notifications, onRefetch }: NotificationBellP
         await markRead({ variables: { id: notification._id } });
         onRefetch();
       }
-      if (notification.taskId) {
-        navigate(`/task/${notification.taskId}`);
-      }
       setOpen(false);
     },
-    [markRead, onRefetch, navigate],
+    [markRead, onRefetch],
   );
 
   const handleMarkAllRead = useCallback(async () => {
@@ -97,7 +92,7 @@ export function NotificationBell({ notifications, onRefetch }: NotificationBellP
         onClick={() => setOpen((prev) => !prev)}
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="menu"
         className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       >
         <div className="relative">
@@ -117,7 +112,7 @@ export function NotificationBell({ notifications, onRefetch }: NotificationBellP
       {/* Popover panel */}
       {open && (
         <div
-          role="dialog"
+          role="menu"
           aria-label="Notifications panel"
           className="absolute bottom-full left-0 z-50 mb-2 w-80 rounded-md border border-border bg-card shadow-lg"
         >
