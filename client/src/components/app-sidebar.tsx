@@ -182,17 +182,7 @@ export function AppSidebar() {
       {/* Bottom section */}
       <div className="border-t border-border p-4">
         {/* Notification bell */}
-        <Link
-          to="/notifications"
-          className="mb-3 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-        >
-          <span>Notifications</span>
-          {unreadCount > 0 && (
-            <span className="ml-auto rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
-              {unreadCount}
-            </span>
-          )}
-        </Link>
+        <NotificationBell notifications={notifications} onRefetch={refetch} />
 
         {/* User info */}
         <div className="flex items-center justify-between px-3">
