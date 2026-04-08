@@ -19,14 +19,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Cache node_modules
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
-
       - name: Install dependencies
         run: npm ci
 
