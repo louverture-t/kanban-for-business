@@ -1,26 +1,27 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "paths": {
-      "@client/*": ["./client/src/*"],
-      "@server/*": ["./server/*"],
-      "@shared/*": ["./shared/*"]
-    }
-  },
-  "include": ["client/src", "server", "shared"],
-  "exclude": ["node_modules", "dist", "coverage"]
+    "compilerOptions": {
+          "target": "ES2022",
+          "module": "ESNext",
+          "moduleResolution": "node",
+          "jsx": "react-jsx",
+          "strict": true,
+          "esModuleInterop": true,
+          "skipLibCheck": true,
+          "forceConsistentCasingInFileNames": true,
+          "resolveJsonModule": true,
+          "isolatedModules": true,
+          "declaration": true,
+          "declarationMap": true,
+          "sourceMap": true,
+          "outDir": "dist",
+          "rootDir": ".",
+          "types": ["node"],
+          "paths": {
+                  "@client/*": ["./client/src/*"],
+                  "@server/*": ["./server/*"],
+                  "@shared/*": ["./shared/*"]
+          }
+    },
+    "include": ["client/src", "server", "shared"],
+    "exclude": ["node_modules", "dist", "coverage"]
 }
