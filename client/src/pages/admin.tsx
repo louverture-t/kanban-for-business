@@ -180,7 +180,7 @@ export function AdminPage() {
 
   // ── Render ──
   return (
-    <main aria-labelledby="admin-heading" className="mx-auto max-w-5xl space-y-6 p-8">
+    <main aria-labelledby="admin-heading" className="mx-auto max-w-5xl space-y-6 p-4 sm:p-8">
       {/* Screen-reader live region for mutation feedback */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {announcement}
@@ -205,8 +205,8 @@ export function AdminPage() {
         {/* ─── Tab 1: Users ─── */}
         <TabsContent value="users" className="mt-4">
           <section aria-label="User management">
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm" aria-label="Users">
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] text-sm" aria-label="Users">
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
                     <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Username</th>
@@ -355,8 +355,8 @@ export function AdminPage() {
               )}
             </fieldset>
 
-            <div className="mt-4 overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm" aria-label="Invitations">
+            <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[520px] text-sm" aria-label="Invitations">
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
                     {['Email', 'Role', 'Status', 'Expires', 'Link'].map((h) => (

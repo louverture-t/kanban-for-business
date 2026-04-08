@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
-import { Plus } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { useAuth } from '@client/hooks/use-auth';
 import { PROJECTS_QUERY, NOTIFICATIONS_QUERY, FOLDERS_QUERY } from '@client/graphql/operations';
 import { ProjectDialog } from '@client/components/project-dialog';
 import { NotificationBell } from '@client/components/notification-bell';
+import { ThemeToggle } from '@client/components/theme-toggle';
 import { Button } from '@client/components/ui/button';
+import { cn } from '@client/lib/utils';
 import type { IProject, INotification, IProjectFolder } from '@shared/types';
 
 const PROJECT_VIEWS = [
@@ -16,7 +18,12 @@ const PROJECT_VIEWS = [
   { label: 'Team', path: 'team' },
 ] as const;
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function AppSidebar({ open, onClose }: AppSidebarProps) {
   const { user, isManagerOrAbove, isSuperadmin, logout } = useAuth();
   const location = useLocation();
 
@@ -55,12 +62,43 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-border bg-card">
+    <aside
+      id="app-sidebar"
+      className={cn(
+        'fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-border bg-card transition-transform duration-300 ease-in-out',
+        'md:static md:z-auto md:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full',
+      )}
+    >
       {/* Logo */}
-      <div className="border-b border-border p-4">
-        <Link to="/" className="text-lg font-bold text-foreground">
+      <div className="flex items-center justify-between border-b border-border p-4">
+        <Link to="/" className="text-lg font-bold text-foreground" onClick={onClose}>
           K4B
         </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+          aria-label="Close navigation"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Search trigger */}
+      <div className="px-3 pb-2 pt-3">
+        <button
+          type="button"
+          onClick={() => document.dispatchEvent(new CustomEvent('open-search'))}
+          className="flex w-full items-center gap-2 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          aria-label="Search tasks (Ctrl+K)"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="flex-1 text-left">Search tasks…</span>
+          <kbd className="inline-flex select-none items-center gap-0.5 rounded border border-border bg-background px-1 font-mono text-[10px] font-medium">
+            ⌃K
+          </kbd>
+        </button>
       </div>
 
       {/* Navigation */}
@@ -69,7 +107,8 @@ export function AppSidebar() {
           <li>
             <Link
               to="/"
-              className={`block rounded-md px-3 py-2 text-sm font-medium ${
+              onClick={onClose}
+              className={`block min-h-[44px] rounded-md px-3 py-2 text-sm font-medium leading-[28px] ${
                 isActive('/')
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -83,7 +122,8 @@ export function AppSidebar() {
             <li>
               <Link
                 to="/admin"
-                className={`block rounded-md px-3 py-2 text-sm font-medium ${
+                onClick={onClose}
+                className={`block min-h-[44px] rounded-md px-3 py-2 text-sm font-medium leading-[28px] ${
                   isActive('/admin')
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -159,7 +199,8 @@ export function AppSidebar() {
                           <li key={path}>
                             <Link
                               to={`/project/${project._id}/${path}`}
-                              className={`block rounded-md px-2 py-1.5 text-xs ${
+                              onClick={onClose}
+                              className={`block min-h-[44px] rounded-md px-2 py-1.5 text-xs leading-[31px] ${
                                 location.pathname === `/project/${project._id}/${path}`
                                   ? 'bg-primary text-primary-foreground'
                                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -181,6 +222,9 @@ export function AppSidebar() {
 
       {/* Bottom section */}
       <div className="border-t border-border p-4">
+        {/* Theme toggle */}
+        <ThemeToggle />
+
         {/* Notification bell */}
         <NotificationBell notifications={notifications} onRefetch={refetch} />
 

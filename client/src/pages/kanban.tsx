@@ -212,18 +212,18 @@ export default function KanbanPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header bar */}
-      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b">
-        <h1 className="text-lg font-semibold truncate">Kanban Board</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+        <h1 className="text-lg font-semibold">Kanban Board</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isManagerOrAbove && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setDecomposeOpen(true)}
             >
-              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              AI Decompose
+              <Sparkles className="h-3.5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">AI Decompose</span>
             </Button>
           )}
 
@@ -232,8 +232,8 @@ export default function KanbanPage() {
             size="sm"
             onClick={() => setShowArchived((v) => !v)}
           >
-            <Archive className="mr-1.5 h-4 w-4" />
-            {showArchived ? 'Hide Archived' : 'Show Archived'}
+            <Archive className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">{showArchived ? 'Hide Archived' : 'Show Archived'}</span>
           </Button>
 
           <Button
@@ -241,8 +241,8 @@ export default function KanbanPage() {
             size="sm"
             onClick={() => setShowTrash((v) => !v)}
           >
-            <Trash2 className="mr-1.5 h-4 w-4" />
-            {showTrash ? 'Hide Trash' : 'Show Trash'}
+            <Trash2 className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">{showTrash ? 'Hide Trash' : 'Show Trash'}</span>
           </Button>
         </div>
       </div>

@@ -391,7 +391,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-6 p-4 sm:p-6 md:p-8 md:space-y-8">
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
       {/* ── Section A — Stats ────────────────────────────── */}
@@ -584,40 +584,42 @@ export function DashboardPage() {
                       const { total, completed } = getProjectTaskCounts(project._id);
                       const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
                       return (
-                        <div key={project._id} className="flex items-center gap-3">
-                          <span
-                            className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
-                            style={{ backgroundColor: project.color }}
-                          />
-                          <span className="w-40 flex-shrink-0 truncate text-sm font-medium" title={project.name}>
-                            {project.name}
-                          </span>
-                          <Progress value={pct} className="flex-1" />
-                          <span className="w-20 flex-shrink-0 text-right text-xs text-muted-foreground">
-                            {completed}/{total} tasks
-                          </span>
-                          {isManagerOrAbove && (
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-1.5"
-                                onClick={() => handleEditProject(project)}
-                                aria-label={`Edit project ${project.name}`}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-1.5 text-destructive hover:text-destructive"
-                                onClick={() => setDeleteProjectTarget(project)}
-                                aria-label={`Delete project ${project.name}`}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
+                        <div key={project._id} className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
+                              style={{ backgroundColor: project.color }}
+                            />
+                            <span className="flex-1 truncate text-sm font-medium" title={project.name}>
+                              {project.name}
+                            </span>
+                            <span className="flex-shrink-0 text-xs tabular-nums text-muted-foreground">
+                              {completed}/{total}
+                            </span>
+                            {isManagerOrAbove && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-1.5"
+                                  onClick={() => handleEditProject(project)}
+                                  aria-label={`Edit project ${project.name}`}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-1.5 text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteProjectTarget(project)}
+                                  aria-label={`Delete project ${project.name}`}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          <Progress value={pct} className="h-1.5" />
                         </div>
                       );
                     })}

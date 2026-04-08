@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client/react';
+import { Menu } from 'lucide-react';
 import { apolloClient } from '@client/lib/apolloClient';
 import { AuthProvider, useAuth } from '@client/hooks/use-auth';
 import { ThemeProvider } from '@client/components/theme-provider';
@@ -31,6 +33,7 @@ function SuperadminRoute() {
 function ProtectedRoute() {
   const { isAuthenticated, loading, user } = useAuth();
   const { isIdle, resetTimer } = useIdleTimer();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
     return (
@@ -50,12 +53,39 @@ function ProtectedRoute() {
   }
 
   return (
-    <div className="flex h-screen">
-      <AppSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <NoPhiBanner />
-        <Outlet />
-      </main>
+    <div className="flex h-screen overflow-hidden">
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Mobile top bar — hamburger + logo */}
+        <div className="flex items-center gap-3 border-b border-border bg-card px-4 md:hidden" style={{ minHeight: '52px' }}>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Open navigation menu"
+            aria-expanded={sidebarOpen}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="text-base font-bold text-foreground">K4B</span>
+        </div>
+
+        <main className="flex-1 overflow-y-auto">
+          <NoPhiBanner />
+          <Outlet />
+        </main>
+      </div>
+
       <SearchCommand />
       {isIdle && <SleepOverlay resetTimer={resetTimer} />}
     </div>
