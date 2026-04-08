@@ -14,8 +14,8 @@ import { AuthenticationError, ValidationError } from '@server/utils/errors.js';
 import { validatePassword, validateUsername, sanitizeInput } from '@server/utils/validators.js';
 import { REFRESH_COOKIE_OPTIONS } from '@server/config/cookies.js';
 
-const LOCKOUT_DURATION_MS = process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 2 * 60 * 1000; // 15 min prod / 2 min dev
-const MAX_FAILED_ATTEMPTS = process.env.NODE_ENV === 'production' ? 5 : 15;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_FAILED_ATTEMPTS = 5;
 
 function toTokenPayload(user: { _id: unknown; username: string; role: string }): TokenPayload {
   return {
