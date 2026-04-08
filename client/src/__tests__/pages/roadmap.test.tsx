@@ -182,6 +182,21 @@ describe('RoadmapPage', () => {
     const initialLabel = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
     expect(screen.getByText(initialLabel)).toBeInTheDocument();
 
+    // Helper to find the Alpha bar button by its title attribute
+    const getAlphaBar = () =>
+      screen.getAllByRole('button').find(
+        (el) => el.getAttribute('title')?.startsWith('Bar Task Alpha'),
+      );
+
+    // Month view: DAY_WIDTH = 36 — capture baseline bar dimensions
+    const monthBar = getAlphaBar();
+    expect(monthBar).toBeDefined();
+    const monthWidth = parseFloat(monthBar!.style.width);
+    const monthLeft  = parseFloat(monthBar!.style.left);
+    expect(monthWidth).toBeGreaterThan(0);
+    // Bar Task Alpha starts Apr 5 (not Apr 1) so left offset must be positive
+    expect(monthLeft).toBeGreaterThan(0);
+
     // Switch to quarter view
     fireEvent.click(screen.getByText('Quarter'));
 
@@ -189,8 +204,19 @@ describe('RoadmapPage', () => {
     // The label no longer shows the full long month name
     expect(screen.queryByText(initialLabel)).not.toBeInTheDocument();
 
-    // Switch back to month view
+    // Quarter view: DAY_WIDTH = 18 (half of month) — bar width and left both halve
+    const quarterBar = getAlphaBar();
+    expect(quarterBar).toBeDefined();
+    const quarterWidth = parseFloat(quarterBar!.style.width);
+    const quarterLeft  = parseFloat(quarterBar!.style.left);
+    expect(quarterWidth).toBe(monthWidth / 2);
+    expect(quarterLeft).toBe(monthLeft / 2);
+
+    // Switch back to month view — bar dimensions restore to original values
     fireEvent.click(screen.getByText('Month'));
     expect(screen.getByText(initialLabel)).toBeInTheDocument();
+    const restoredBar = getAlphaBar();
+    expect(parseFloat(restoredBar!.style.width)).toBe(monthWidth);
+    expect(parseFloat(restoredBar!.style.left)).toBe(monthLeft);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
@@ -115,18 +115,24 @@ function makeMocks(
   projects: IProject[] = sampleProjects,
   folders: IProjectFolder[] = sampleFolders,
 ): MockedResponse[] {
+  // delay: 0 overrides Apollo Client v4's default realisticDelay (20–50ms random).
+  // All three responses resolve via setTimeout(fn, 0) — the same macrotask queue
+  // tick — so a single act(async () => { await setTimeout(0) }) drains them all.
   return [
     {
       request: { query: PROJECTS_QUERY },
       result: { data: { projects } },
+      delay: 0,
     },
     {
       request: { query: TASKS_QUERY, variables: { includeArchived: false } },
       result: { data: { tasks } },
+      delay: 0,
     },
     {
       request: { query: FOLDERS_QUERY },
       result: { data: { folders } },
+      delay: 0,
     },
   ];
 }
@@ -184,19 +190,21 @@ describe('DashboardPage', () => {
   it('renders progress bar section with correct project progress', async () => {
     renderDashboard();
 
-    // Wait for all three queries (projects + tasks + folders) to settle.
-    // Using 'Clinical' as the sentinel because it comes from FOLDERS_QUERY,
-    // which is the last to arrive when the loading gate passes early on tasks.
-    await waitFor(() => {
-      expect(screen.getByText('Project Progress')).toBeInTheDocument();
-      expect(screen.getByText('Clinical')).toBeInTheDocument();
-      expect(screen.getByText('Project One')).toBeInTheDocument();
-      expect(screen.getByText('Project Two')).toBeInTheDocument();
-      // Project One is in "Clinical" folder → renders "{completed}/{total}" (no "tasks" suffix)
-      expect(screen.getByText('1/2')).toBeInTheDocument();
-      // Project Two is in "No Folder" section → renders "{completed}/{total} tasks"
-      expect(screen.getByText('0/2 tasks')).toBeInTheDocument();
+    // Apollo MockedProvider delivers each response via setTimeout(fn, 0).
+    // Awaiting a single setTimeout(0) inside act() drains all three pending
+    // query callbacks in one batch — deterministic, no retry-lottery needed.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
+
+    expect(screen.getByText('Project Progress')).toBeInTheDocument();
+    expect(screen.getByText('Clinical')).toBeInTheDocument();
+    expect(screen.getByText('Project One')).toBeInTheDocument();
+    expect(screen.getByText('Project Two')).toBeInTheDocument();
+    // Project One is in "Clinical" folder → renders "{completed}/{total}" (no "tasks" suffix)
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+    // Project Two is in "No Folder" section → renders "{completed}/{total} tasks"
+    expect(screen.getByText('0/2 tasks')).toBeInTheDocument();
   });
 
   it('renders folder sections with project progress bars', async () => {
