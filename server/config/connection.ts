@@ -22,7 +22,11 @@ export const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 
 export async function connectDB(): Promise<typeof mongoose> {
   try {
-    const conn = await mongoose.connect(MONGODB_URI);
+    const conn = await mongoose.connect(MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {

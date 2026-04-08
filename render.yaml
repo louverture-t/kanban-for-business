@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: kanban-for-business
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    # Build from repo root (do NOT set rootDir)
+    buildCommand: npm ci && npm run build
+    # Server entry point after compilation
+    startCommand: node dist/server/index.js
+    # Disable auto-deploy — GitHub Actions deploy.yml is the sole trigger
+    autoDeploy: false
+    healthCheckPath: /api/health
+    envVarGroups:
+      - k4b-env
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render auto-generates this secret — never set manually
+      - key: JWT_SECRET
+        generateValue: true
+      # User provides after Atlas cluster creation
+      - key: MONGODB_URI
+        sync: false
+      # User provides OpenRouter API key
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # User provides after Render assigns service URL
+      - key: CLIENT_ORIGIN
+        sync: false
+
+# MongoDB Atlas Network Access: Set IP allowlist to 0.0.0.0/0
+# Render's outbound IPs rotate on each deploy/restart — static IPs will break
