@@ -14,7 +14,7 @@ services:
     healthCheckPath: /api/health
     envVarGroups:
       - k4b-env
-    env:
+    envVars:
       - key: NODE_ENV
         value: production
       # Render auto-generates this secret — never set manually
