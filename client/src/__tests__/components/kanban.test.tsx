@@ -255,4 +255,32 @@ describe('KanbanPage', () => {
 
     expect(screen.queryByRole('button', { name: /ai decompose/i })).not.toBeInTheDocument();
   });
+
+  it('shows "Add task" column buttons for manager', async () => {
+    mockIsManagerOrAbove = true;
+    renderKanban(makeBaseMocks());
+
+    await waitFor(() => {
+      expect(screen.getByText('Kanban Board')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /add task to backlog/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add task to active/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add task to review/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add task to complete/i })).toBeInTheDocument();
+  });
+
+  it('hides "Add task" column buttons for regular user', async () => {
+    mockIsManagerOrAbove = false;
+    renderKanban(makeBaseMocks());
+
+    await waitFor(() => {
+      expect(screen.getByText('Kanban Board')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /add task to backlog/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add task to active/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add task to review/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add task to complete/i })).not.toBeInTheDocument();
+  });
 });

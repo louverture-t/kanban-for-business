@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing/react';
 import type { MockedResponse } from '@apollo/client/testing';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -12,10 +13,12 @@ import type { ITask, IProject, IProjectFolder } from '@shared/types';
 
 // ─── Mocks ──────────────────────────────────────────────────
 
+let mockIsManagerOrAbove = true;
+
 vi.mock('@client/hooks/use-auth', () => ({
   useAuth: () => ({
-    user: { _id: 'user-1', username: 'joe', role: 'manager' },
-    isManagerOrAbove: true,
+    user: { _id: 'user-1', username: 'joe', role: mockIsManagerOrAbove ? 'manager' : 'user' },
+    isManagerOrAbove: mockIsManagerOrAbove,
     isSuperadmin: false,
     isAuthenticated: true,
     loading: false,
@@ -143,6 +146,10 @@ function renderDashboard(mocks: MockedResponse[] = makeMocks()) {
 // ─── Tests ──────────────────────────────────────────────────
 
 describe('DashboardPage', () => {
+  afterEach(() => {
+    mockIsManagerOrAbove = true;
+  });
+
   it('shows loading state while queries are in flight', () => {
     const mocks = makeMocks().map((m) => ({ ...m, delay: Infinity }));
     renderDashboard(mocks);
@@ -185,9 +192,9 @@ describe('DashboardPage', () => {
       expect(screen.getByText('Clinical')).toBeInTheDocument();
       expect(screen.getByText('Project One')).toBeInTheDocument();
       expect(screen.getByText('Project Two')).toBeInTheDocument();
-      // Project One: 1 complete / 2 total → "1/2 tasks"
-      expect(screen.getByText('1/2 tasks')).toBeInTheDocument();
-      // Project Two: 0 complete / 2 total → "0/2 tasks"
+      // Project One is in "Clinical" folder → renders "{completed}/{total}" (no "tasks" suffix)
+      expect(screen.getByText('1/2')).toBeInTheDocument();
+      // Project Two is in "No Folder" section → renders "{completed}/{total} tasks"
       expect(screen.getByText('0/2 tasks')).toBeInTheDocument();
     });
   });
@@ -229,6 +236,128 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Top Priority Tasks')).toBeInTheDocument();
+    });
+  });
+
+  it('clicking a stat card filters the task list and toggles aria-pressed', async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+
+    // Wait for data to settle
+    await waitFor(() => {
+      expect(screen.getByText('Top Priority Tasks')).toBeInTheDocument();
+    });
+
+    // Default view: non-complete tasks shown; Task Beta (complete) is absent
+    expect(screen.queryByTestId('task-card-t2')).not.toBeInTheDocument();
+
+    // "Completed" stat card starts unpressed
+    const completedCard = screen.getByRole('button', { name: /Completed/i });
+    expect(completedCard).toHaveAttribute('aria-pressed', 'false');
+
+    // Click to activate the "complete" filter
+    await user.click(completedCard);
+
+    // aria-pressed flips to true
+    expect(completedCard).toHaveAttribute('aria-pressed', 'true');
+
+    // Only the complete task (Task Beta) appears; active tasks are gone
+    expect(screen.getByTestId('task-card-t2')).toBeInTheDocument();
+    expect(screen.queryByTestId('task-card-t1')).not.toBeInTheDocument();
+
+    // "Clear filter" button becomes visible
+    expect(screen.getByRole('button', { name: /clear filter/i })).toBeInTheDocument();
+
+    // Click the same card again to deselect
+    await user.click(completedCard);
+    expect(completedCard).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Top Priority Tasks')).toBeInTheDocument();
+  });
+
+  it('shows empty state when Overdue filter is active and no tasks have a due date', async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+
+    // Wait for data to settle — sampleTasks have no dueDate, so overdue count = 0
+    await waitFor(() => {
+      expect(screen.getByText('Top Priority Tasks')).toBeInTheDocument();
+    });
+
+    const overdueCard = screen.getByRole('button', { name: /Overdue/i });
+    await user.click(overdueCard);
+
+    // Section heading changes to reflect active filter
+    expect(screen.getByText('Overdue Tasks')).toBeInTheDocument();
+
+    // No task cards — all sampleTasks lack dueDate so none qualify
+    expect(screen.getByText('No tasks to display.')).toBeInTheDocument();
+  });
+
+  describe('RBAC visibility', () => {
+    it('shows New Folder and New Project buttons for Manager+', async () => {
+      mockIsManagerOrAbove = true;
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /new folder/i })).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /new project/i })).toBeInTheDocument();
+    });
+
+    it('hides New Folder and New Project buttons for regular User', async () => {
+      mockIsManagerOrAbove = false;
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByText('Project Progress')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /new folder/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /new project/i })).not.toBeInTheDocument();
+    });
+
+    it('hides folder edit and delete buttons for regular User', async () => {
+      mockIsManagerOrAbove = false;
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByText('Clinical')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /edit folder clinical/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /delete folder clinical/i })).not.toBeInTheDocument();
+    });
+
+    it('hides project edit and delete buttons for regular User', async () => {
+      mockIsManagerOrAbove = false;
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByText('Project One')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /edit project project one/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /delete project project one/i })).not.toBeInTheDocument();
+    });
+
+    it('shows folder edit and delete buttons for Manager+', async () => {
+      mockIsManagerOrAbove = true;
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /edit folder clinical/i })).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /delete folder clinical/i })).toBeInTheDocument();
+    });
+
+    it('shows project edit and delete buttons for Manager+', async () => {
+      mockIsManagerOrAbove = true;
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /edit project project one/i })).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /delete project project one/i })).toBeInTheDocument();
     });
   });
 });
