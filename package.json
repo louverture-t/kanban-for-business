@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "tsc && vite build",
+    "build": "tsc -p tsconfig.build.json && vite build",
     "start": "node dist/server/index.js",
     "check": "tsc --noEmit",
     "lint": "eslint .",
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/louverture-t/kanban-for-business.git"
+    "url": "git+https://github.com/louverture-t/kanban-for-business.git"h
   },
   "author": "",
   "license": "ISC",
