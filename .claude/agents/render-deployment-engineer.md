@@ -85,6 +85,60 @@ Before delivering any configuration:
 - Check that health check endpoint exists in the codebase
 - Confirm git branch references match project conventions (`main`)
 
+## K4B Day 5 Errata — Verified Corrections
+
+These corrections override any earlier drafts or generically generated render.yaml / CI config:
+
+| Field / Step | Wrong | Correct | Reason |
+|---|---|---|---|
+| `startCommand` | `node dist/index.js` | `node dist/server/index.js` | `tsc` compiles server under `dist/server/` not `dist/` |
+| `rootDir` | `rootDir: ./server` | **Omit entirely** | K4B `npm run build` runs from repo root (`tsc && vite build`) |
+| `autoDeploy` | `true` | `false` | `deploy.yml` is the sole trigger; `true` causes double-deploys on push |
+| `JWT_SECRET` | set manually | `generateValue: true` | Render auto-generates a secure value; manual set is unnecessary and risky |
+| MongoDB Atlas IP | static Render IP | `0.0.0.0/0` | Render outbound IPs rotate on every deploy/restart; static list breaks the next deploy |
+| `npm run build` output | assume `dist/public` exists | verify `dist/server/index.js` + `dist/public/` both produced | Static frontend goes to `dist/public`, server to `dist/server/` |
+| `healthCheckPath` | `/health` | `/api/health` | Express health route is mounted under `/api` |
+| E2E gate in `ci.yml` | include `npm run test:e2e` | omit Playwright from CI | Playwright requires a running browser + dev server; not suitable for GitHub Actions default runners without extra setup |
+
+**Render Deploy Hook flow:**
+- `deploy.yml` fires `curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}` on push to `main`
+- GitHub Secret name: `RENDER_DEPLOY_HOOK_URL` (must be set manually after Render onboarding)
+- Do NOT use Render API token for deploy triggers — deploy hook is simpler and scoped
+
+**`envVarGroups` pattern:**
+```yaml
+envVarGroups:
+  - k4b-env
+```
+`k4b-env` group is created manually in Render dashboard and holds `MONGODB_URI`, `OPENROUTER_API_KEY`, `CLIENT_ORIGIN`, `NODE_ENV`.
+
+**Proven `render.yaml` skeleton:**
+```yaml
+services:
+  - type: web
+    name: kanban-for-business
+    runtime: node
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/server/index.js
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+    envVarGroups:
+      - k4b-env
+```
+
+---
+
 ## Update your agent memory
 
 As you discover deployment configurations, build issues, environment quirks, Render platform behaviors, and CI/CD patterns specific to this project, write concise notes about what you found and where.
