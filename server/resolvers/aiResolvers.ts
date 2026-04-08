@@ -11,7 +11,7 @@ import { OPENROUTER_API_KEY, NODE_ENV } from '@server/config/connection.js';
 // --- Rate limiting: in-memory per-user AI call tracker ---
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT_MAX = NODE_ENV === 'production' ? 10 : 1_000;
+const RATE_LIMIT_MAX = 10;
 
 function checkRateLimit(userId: string): void {
   const now = Date.now();
