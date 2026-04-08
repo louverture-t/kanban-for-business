@@ -89,6 +89,13 @@ export function SearchCommand() {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
+  // ── Sidebar button trigger (open-search custom event) ────────────────────
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    document.addEventListener('open-search', handler);
+    return () => document.removeEventListener('open-search', handler);
+  }, []);
+
   // ── Reset state on close ─────────────────────────────────────────────────
   const handleOpenChange = useCallback((value: boolean) => {
     setOpen(value);

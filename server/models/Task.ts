@@ -47,7 +47,10 @@ const taskSchema = new Schema<ITask>(
   { timestamps: true },
 );
 
-taskSchema.index({ title: 'text', description: 'text' });
+taskSchema.index(
+  { title: 'text', description: 'text' },
+  { weights: { title: 10, description: 3 }, name: 'task_text_idx' },
+);
 taskSchema.index({ projectId: 1, status: 1 });
 
 const Task = model<ITask>('Task', taskSchema);
