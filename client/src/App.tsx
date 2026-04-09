@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client/react';
 import { Menu } from 'lucide-react';
@@ -11,17 +11,26 @@ import { ErrorBoundary } from '@client/components/error-boundary';
 import { SleepOverlay } from '@client/components/sleep-overlay';
 import { useIdleTimer } from '@client/hooks/use-idle-timer';
 import { SearchCommand } from '@client/components/search-command';
-import { LoginPage } from '@client/pages/login';
-import { RegisterPage } from '@client/pages/register';
-import { ChangePasswordPage } from '@client/pages/change-password';
-import { DashboardPage } from '@client/pages/dashboard';
-import { PriorityPage } from '@client/pages/priority';
-import { TeamPage } from '@client/pages/team';
-import KanbanPage from '@client/pages/kanban';
-import { RoadmapPage } from '@client/pages/roadmap';
-import { AdminPage } from '@client/pages/admin';
-import { SettingsPage } from '@client/pages/settings';
-import { NotFoundPage } from '@client/pages/not-found';
+
+const LoginPage = lazy(() => import('@client/pages/login').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('@client/pages/register').then(m => ({ default: m.RegisterPage })));
+const ChangePasswordPage = lazy(() => import('@client/pages/change-password').then(m => ({ default: m.ChangePasswordPage })));
+const DashboardPage = lazy(() => import('@client/pages/dashboard').then(m => ({ default: m.DashboardPage })));
+const PriorityPage = lazy(() => import('@client/pages/priority').then(m => ({ default: m.PriorityPage })));
+const TeamPage = lazy(() => import('@client/pages/team').then(m => ({ default: m.TeamPage })));
+const KanbanPage = lazy(() => import('@client/pages/kanban'));
+const RoadmapPage = lazy(() => import('@client/pages/roadmap').then(m => ({ default: m.RoadmapPage })));
+const AdminPage = lazy(() => import('@client/pages/admin').then(m => ({ default: m.AdminPage })));
+const SettingsPage = lazy(() => import('@client/pages/settings').then(m => ({ default: m.SettingsPage })));
+const NotFoundPage = lazy(() => import('@client/pages/not-found').then(m => ({ default: m.NotFoundPage })));
+
+function PageLoader() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <p className="text-muted-foreground">Loading...</p>
+    </div>
+  );
+}
 
 // ─── Protected Route Wrapper ──────────────────────────────
 
@@ -121,6 +130,7 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
             <AuthProvider>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
                 <Route element={<PublicRoute />}>
@@ -147,6 +157,7 @@ function App() {
                 {/* 404 */}
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
+              </Suspense>
             </AuthProvider>
           </BrowserRouter>
         </ThemeProvider>
