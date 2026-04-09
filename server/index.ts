@@ -127,14 +127,14 @@ if (NODE_ENV === 'development') {
   setupStaticServing(app);
 }
 
-// --- Connect DB + seed + start ---
-await connectDB();
-await seedDatabase();
-
+// --- Bind port first so health checks pass immediately ---
 await new Promise<void>((resolve) => {
   httpServer.listen({ port: PORT }, resolve);
 });
-
 console.log(`🚀 Server ready at http://localhost:${PORT}`);
 console.log(`📊 GraphQL: http://localhost:${PORT}/graphql`);
 console.log(`💊 Health: http://localhost:${PORT}/api/health`);
+
+// --- Connect DB + seed after port is bound ---
+await connectDB();
+await seedDatabase();
