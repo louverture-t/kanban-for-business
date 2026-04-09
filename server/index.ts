@@ -20,6 +20,12 @@ import { seedDatabase } from '@server/seed.js';
 const app = express();
 const httpServer = http.createServer(app);
 
+// Render (and most PaaS) reverse-proxies requests; trust the first proxy
+// so express-rate-limit reads the real client IP from X-Forwarded-For.
+if (NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // --- Apollo Server ---
 const server = new ApolloServer<GraphQLContext>({
   typeDefs,
@@ -32,8 +38,10 @@ await server.start();
 // --- Middleware ---
 app.use(cookieParser());
 
+// Trim CLIENT_ORIGIN to prevent ERR_INVALID_CHAR from whitespace in env vars
+const sanitizedOrigin = CLIENT_ORIGIN?.trim() || undefined;
 const corsOptions: cors.CorsOptions = {
-  origin: NODE_ENV === 'production' ? (CLIENT_ORIGIN ?? false) : (CLIENT_ORIGIN ?? true),
+  origin: NODE_ENV === 'production' ? (sanitizedOrigin ?? false) : (sanitizedOrigin ?? true),
   credentials: true,
 };
 
