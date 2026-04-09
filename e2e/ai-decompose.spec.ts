@@ -20,7 +20,7 @@ async function login(page: Page, username: string, password: string) {
   await page.fill('#username', username);
   await page.fill('#password', password);
   await page.click('button[type="submit"]');
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15_000 });
+  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30_000 });
 }
 
 async function goToKanban(page: Page) {

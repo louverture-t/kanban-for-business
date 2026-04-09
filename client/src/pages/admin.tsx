@@ -329,12 +329,12 @@ export function AdminPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="inv-project">Project (optional)</Label>
-                <Select value={invProjectId} onValueChange={setInvProjectId}>
+                <Select value={invProjectId || '__none__'} onValueChange={(v) => setInvProjectId(v === '__none__' ? '' : v)}>
                   <SelectTrigger id="inv-project" className="w-44 focus-visible:ring-2 focus-visible:ring-ring">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {projects.map((p) => (
                       <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
                     ))}
