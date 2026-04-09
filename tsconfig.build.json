@@ -1,5 +1,6 @@
 {
     "extends": "./tsconfig.json",
+    "include": ["server", "shared"],
     "exclude": [
           "node_modules",
           "dist",
@@ -8,6 +9,7 @@
           "**/*.test.ts",
           "**/*.test.tsx",
           "**/*.spec.ts",
-          "**/*.spec.tsx"
+          "**/*.spec.tsx",
+          "server/vite.ts"
     ]
 }
