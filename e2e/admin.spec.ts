@@ -6,6 +6,7 @@
  *   - admin      / admin123   (role: manager)
  */
 import { test, expect, type Page } from '@playwright/test';
+import { createInviteToken, gqlRequest, loginViaApi, registerViaApi } from './helpers';
 
 // ─── Constants ────────────────────────────────────────────────
 const SUPERADMIN = { username: 'superadmin', password: 'Admin@123' };
@@ -26,6 +27,26 @@ async function login(page: Page, username: string, password: string) {
 async function goToAdmin(page: Page) {
   await page.goto('/admin');
   await page.waitForLoadState('networkidle');
+}
+
+async function waitForUserInAdminApi(
+  request: Parameters<typeof gqlRequest>[0],
+  adminToken: string,
+  username: string,
+): Promise<void> {
+  for (let i = 0; i < 5; i++) {
+    const data = await gqlRequest(
+      request,
+      `query { adminUsers { username } }`,
+      undefined,
+      adminToken,
+    );
+    const users = (data as { data?: { adminUsers?: { username: string }[] } }).data?.adminUsers ?? [];
+    if (users.some((u) => u.username === username)) {
+      return;
+    }
+  }
+  throw new Error(`Timed out waiting for adminUsers to include ${username}`);
 }
 
 // ─── Tests ────────────────────────────────────────────────────
@@ -84,7 +105,15 @@ test.describe('Admin Panel', () => {
     ).toBeVisible();
   });
 
-  test('change user role — reflected in user table', async ({ page }) => {
+  test('change user role — reflected in user table', async ({ page, request }) => {
+    const ts = Date.now();
+    const targetUsername = `roleflip${ts}`;
+    const targetEmail = `roleflip-${ts}@e2e.local`;
+    const adminToken = await loginViaApi(request);
+    const inviteToken = await createInviteToken(request, adminToken, targetEmail);
+    await registerViaApi(request, targetUsername, 'RoleFlip@123', inviteToken);
+    await waitForUserInAdminApi(request, adminToken, targetUsername);
+
     await login(page, SUPERADMIN.username, SUPERADMIN.password);
     await goToAdmin(page);
 
@@ -93,29 +122,31 @@ test.describe('Admin Panel', () => {
       timeout: 15_000,
     });
 
-    // Find the row containing exactly "admin" in a username cell
-    const adminRow = page.locator('tr', { hasText: 'admin' }).filter({
-      has: page.locator('td', { hasText: /^admin$/ }),
+    // Find the deterministic row created for this test.
+    const userCell = page.locator('table[aria-label="Users"] td', {
+      hasText: new RegExp(`^${targetUsername}$`),
     });
+
+    for (let i = 0; i < 3; i++) {
+      if (await userCell.count()) break;
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+    }
+
+    const adminRow = page.locator('tr').filter({ has: userCell });
     await expect(adminRow).toBeVisible({ timeout: 10_000 });
 
     const roleSelect = adminRow.locator('button[role="combobox"]');
     await expect(roleSelect).toBeVisible({ timeout: 5_000 });
 
-    const currentRole = await roleSelect.textContent();
-    const isManager = currentRole?.trim().toLowerCase().includes('manager');
-
-    // Toggle to the opposite role then revert
-    const newRole = isManager ? 'User' : 'Manager';
-    const originalRole = isManager ? 'Manager' : 'User';
+    // New user starts as "User"; toggle to Manager then back to User.
+    await roleSelect.click();
+    await page.getByRole('option', { name: 'Manager', exact: true }).click();
+    await expect(roleSelect).toContainText('Manager', { timeout: 10_000 });
 
     await roleSelect.click();
-    await page.getByRole('option', { name: newRole, exact: true }).click();
-    await expect(roleSelect).toContainText(newRole, { timeout: 10_000 });
-
-    await roleSelect.click();
-    await page.getByRole('option', { name: originalRole, exact: true }).click();
-    await expect(roleSelect).toContainText(originalRole, { timeout: 10_000 });
+    await page.getByRole('option', { name: 'User', exact: true }).click();
+    await expect(roleSelect).toContainText('User', { timeout: 10_000 });
   });
 
   test('add and remove project member', async ({ page }) => {

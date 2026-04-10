@@ -25,7 +25,7 @@ export default defineConfig({
         webServer: {
           command: 'npm run dev',
           url: `${LOCAL_URL}/api/health`,
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: false,
           timeout: 60_000,
         },
       }),

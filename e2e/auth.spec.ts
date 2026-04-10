@@ -49,7 +49,7 @@ test.describe('Authentication', () => {
     const adminToken = await loginViaApi(request);
     const ts = Date.now();
     const inviteToken = await createInviteToken(request, adminToken, `locktest-${ts}@e2e.local`);
-    const lockUsername = `locktest-${ts}`;
+    const lockUsername = `locktest${ts}`;
     await registerViaApi(request, lockUsername, 'LockTest@123', inviteToken);
 
     // Fail 5 times — each attempt increments failedAttempts; on attempt 5, lockedUntil is set
@@ -82,7 +82,7 @@ test.describe('Authentication', () => {
       adminToken,
       `register-${ts}@e2e.local`,
     );
-    const newUsername = `e2ereg-${ts}`;
+    const newUsername = `e2ereg${ts}`;
 
     await page.goto(`/register?token=${inviteToken}`);
 
