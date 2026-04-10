@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, type ComponentType } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client/react';
 import { Menu } from 'lucide-react';
@@ -13,17 +13,46 @@ import { useIdleTimer } from '@client/hooks/use-idle-timer';
 import { SearchCommand } from '@client/components/search-command';
 import { Toaster } from '@client/components/toaster';
 
-const LoginPage = lazy(() => import('@client/pages/login').then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('@client/pages/register').then(m => ({ default: m.RegisterPage })));
-const ChangePasswordPage = lazy(() => import('@client/pages/change-password').then(m => ({ default: m.ChangePasswordPage })));
-const DashboardPage = lazy(() => import('@client/pages/dashboard').then(m => ({ default: m.DashboardPage })));
-const PriorityPage = lazy(() => import('@client/pages/priority').then(m => ({ default: m.PriorityPage })));
-const TeamPage = lazy(() => import('@client/pages/team').then(m => ({ default: m.TeamPage })));
-const KanbanPage = lazy(() => import('@client/pages/kanban'));
-const RoadmapPage = lazy(() => import('@client/pages/roadmap').then(m => ({ default: m.RoadmapPage })));
-const AdminPage = lazy(() => import('@client/pages/admin').then(m => ({ default: m.AdminPage })));
-const SettingsPage = lazy(() => import('@client/pages/settings').then(m => ({ default: m.SettingsPage })));
-const NotFoundPage = lazy(() => import('@client/pages/not-found').then(m => ({ default: m.NotFoundPage })));
+// When a new deploy replaces hashed chunk filenames, already-open tabs will
+// fail to import old chunks. Detect that specific failure and force a single
+// full reload so the browser fetches fresh index.html and new asset hashes.
+const CHUNK_RELOAD_KEY = 'k4b:chunk-reload-attempted';
+
+function isChunkLoadError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return (
+    /Failed to fetch dynamically imported module/i.test(message) ||
+    /Loading chunk [\w-]+ failed/i.test(message) ||
+    /Importing a module script failed/i.test(message)
+  );
+}
+
+function lazyWithReload<T extends { default: ComponentType<any> }>(
+  factory: () => Promise<T>,
+) {
+  return lazy(() =>
+    factory().catch((err: unknown) => {
+      if (isChunkLoadError(err) && !sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, '1');
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    }),
+  );
+}
+
+const LoginPage = lazyWithReload(() => import('@client/pages/login').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazyWithReload(() => import('@client/pages/register').then(m => ({ default: m.RegisterPage })));
+const ChangePasswordPage = lazyWithReload(() => import('@client/pages/change-password').then(m => ({ default: m.ChangePasswordPage })));
+const DashboardPage = lazyWithReload(() => import('@client/pages/dashboard').then(m => ({ default: m.DashboardPage })));
+const PriorityPage = lazyWithReload(() => import('@client/pages/priority').then(m => ({ default: m.PriorityPage })));
+const TeamPage = lazyWithReload(() => import('@client/pages/team').then(m => ({ default: m.TeamPage })));
+const KanbanPage = lazyWithReload(() => import('@client/pages/kanban'));
+const RoadmapPage = lazyWithReload(() => import('@client/pages/roadmap').then(m => ({ default: m.RoadmapPage })));
+const AdminPage = lazyWithReload(() => import('@client/pages/admin').then(m => ({ default: m.AdminPage })));
+const SettingsPage = lazyWithReload(() => import('@client/pages/settings').then(m => ({ default: m.SettingsPage })));
+const NotFoundPage = lazyWithReload(() => import('@client/pages/not-found').then(m => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
   return (
@@ -125,6 +154,10 @@ function PublicRoute() {
 // ─── App ──────────────────────────────────────────────────
 
 function App() {
+  useEffect(() => {
+    sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+  }, []);
+
   return (
     <ErrorBoundary>
       <ApolloProvider client={apolloClient}>
