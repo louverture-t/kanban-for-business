@@ -110,7 +110,7 @@ function formatCreatedAt(value: string | undefined): string {
 }
 
 export function AdminPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const currentUserId = user?._id ?? '';
 
   // Live region feedback
@@ -120,7 +120,10 @@ export function AdminPage() {
   const [pendingRoleChange, setPendingRoleChange] = useState<IPendingRoleChange | null>(null);
 
   // ── Users ──
-  const { data: usersData, refetch: refetchUsers } = useQuery<{ adminUsers: IUserRow[] }>(ADMIN_USERS_QUERY);
+  const { data: usersData, refetch: refetchUsers } = useQuery<{ adminUsers: IUserRow[] }>(
+    ADMIN_USERS_QUERY,
+    { skip: authLoading || !user },
+  );
   const users = useMemo<IUserRow[]>(() => usersData?.adminUsers ?? [], [usersData]);
 
   const [updateUser] = useMutation(UPDATE_USER_MUTATION, {
@@ -153,7 +156,10 @@ export function AdminPage() {
   }
 
   // ── Invitations ──
-  const { data: invData, refetch: refetchInvitations } = useQuery<{ adminInvitations: IInvitationRow[] }>(ADMIN_INVITATIONS_QUERY);
+  const { data: invData, refetch: refetchInvitations } = useQuery<{ adminInvitations: IInvitationRow[] }>(
+    ADMIN_INVITATIONS_QUERY,
+    { skip: authLoading || !user },
+  );
   const invitations = useMemo<IInvitationRow[]>(() => invData?.adminInvitations ?? [], [invData]);
 
   const [invEmail, setInvEmail] = useState('');
