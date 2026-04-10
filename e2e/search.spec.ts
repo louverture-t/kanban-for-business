@@ -1,15 +1,20 @@
 /**
  * E2E tests for the global search command palette (Ctrl+K).
  *
- * Runs against production: https://kanban-for-business.onrender.com
- *
  * Seeded credentials:
  *   - superadmin / Admin@123  (role: superadmin)
+ *
+ * beforeAll creates a known fixture task so search results are guaranteed
+ * even on a fresh local database.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { loginViaApi, getOrCreateProjectId, createTaskViaApi } from './helpers';
 
 // ─── Constants ────────────────────────────────────────────────
 const SUPERADMIN = { username: 'superadmin', password: 'Admin@123' };
+
+// ─── State (set in beforeAll) ─────────────────────────────────
+let searchFixtureTitle: string;
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -31,13 +36,12 @@ async function openSearch(page: Page) {
       await expect(
         page.getByRole('dialog', { name: 'Global task search' }),
       ).toBeVisible({ timeout: 3_000 });
-      return; // success
+      return;
     } catch {
-      // Dialog didn't open, retry after a short wait
       await page.waitForTimeout(500);
     }
   }
-  // Final attempt — let it throw
+  // Final attempt — let it throw naturally
   await expect(
     page.getByRole('dialog', { name: 'Global task search' }),
   ).toBeVisible({ timeout: 5_000 });
@@ -46,9 +50,16 @@ async function openSearch(page: Page) {
 // ─── Tests ────────────────────────────────────────────────────
 
 test.describe('Search Command Palette', () => {
+  test.beforeAll(async ({ request }) => {
+    // Create a fixture task with a unique title so searches always return results
+    const token = await loginViaApi(request);
+    const pid = await getOrCreateProjectId(request, token);
+    searchFixtureTitle = `e2e-search-${Date.now()}`;
+    await createTaskViaApi(request, token, pid, searchFixtureTitle);
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page, SUPERADMIN.username, SUPERADMIN.password);
-    // Wait for dashboard to fully load and event listeners to attach
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1_000);
   });
@@ -56,14 +67,10 @@ test.describe('Search Command Palette', () => {
   test('Ctrl+K opens search dialog', async ({ page }) => {
     await openSearch(page);
 
-    // Input is focused with placeholder
-    await expect(
-      page.getByPlaceholder('Search tasks...'),
-    ).toBeFocused();
+    await expect(page.getByPlaceholder('Search tasks...')).toBeFocused();
 
-    // Close by clicking the backdrop
+    // Close via backdrop click
     await page.locator('.fixed.inset-0.z-50').click({ position: { x: 10, y: 10 } });
-
     await expect(
       page.getByRole('dialog', { name: 'Global task search' }),
     ).not.toBeVisible({ timeout: 5_000 });
@@ -75,19 +82,11 @@ test.describe('Search Command Palette', () => {
     const input = page.getByPlaceholder('Search tasks...');
     await expect(input).toBeVisible({ timeout: 5_000 });
 
-    // Type a search query
-    await input.fill('task');
+    // Search for the fixture task — guaranteed to exist
+    await input.fill(searchFixtureTitle);
+    await page.waitForTimeout(2_000); // debounce + network
 
-    // Wait for debounce (300ms) + network response
-    await page.waitForTimeout(2_000);
-
-    // Either results appear or "No tasks found" message
-    const hasResults = await page.locator('[cmdk-item]').count();
-    if (hasResults > 0) {
-      await expect(page.locator('[cmdk-item]').first()).toBeVisible();
-    } else {
-      await expect(page.getByText(/no tasks found/i)).toBeVisible();
-    }
+    await expect(page.locator('[cmdk-item]').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('click result navigates to project kanban view', async ({ page }) => {
@@ -96,23 +95,15 @@ test.describe('Search Command Palette', () => {
     const input = page.getByPlaceholder('Search tasks...');
     await expect(input).toBeVisible({ timeout: 5_000 });
 
-    // Search broadly
-    await input.fill('task');
+    await input.fill(searchFixtureTitle);
     await page.waitForTimeout(2_000);
 
-    const resultCount = await page.locator('[cmdk-item]').count();
-    if (resultCount === 0) {
-      test.skip(true, 'No search results to click');
-      return;
-    }
+    // Fixture task guarantees at least one result
+    const firstResult = page.locator('[cmdk-item]').first();
+    await expect(firstResult).toBeVisible({ timeout: 5_000 });
+    await firstResult.click();
 
-    // Click the first result
-    await page.locator('[cmdk-item]').first().click();
-
-    // Should navigate to a project kanban view
     await expect(page).toHaveURL(/\/project\/.*\/kanban/, { timeout: 15_000 });
-
-    // Search dialog should be closed
     await expect(
       page.getByRole('dialog', { name: 'Global task search' }),
     ).not.toBeVisible();

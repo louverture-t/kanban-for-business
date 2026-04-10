@@ -1,19 +1,23 @@
 /**
  * E2E tests for the Kanban board.
  *
- * Runs against production: https://kanban-for-business.onrender.com
+ * Seeded credentials:
+ *   - superadmin / Admin@123  (superadmin)
  *
- * Pre-conditions (seeded in MongoDB):
- *   - projectId: 69d3b45bcd85533a008790fe  (name: "kanban")
- *   - superadmin / Admin@123  (superadmin, project member)
- *   - admin      / admin123   (manager, project member)
+ * The project ID is resolved dynamically in beforeAll: the first accessible
+ * project is reused; if the local DB is fresh, a test project is auto-created.
+ *
+ * Day 5 coverage (7 tests):
+ *   navigate, create task, edit task, delete task, restore task,
+ *   archive toggle, drag task
  */
 import { test, expect, type Page } from '@playwright/test';
+import { loginViaApi, getOrCreateProjectId } from './helpers';
 
-// ─── Constants ────────────────────────────────────────────────
-const PROJECT_ID = '69d3b45bcd85533a008790fe';
+// ─── State (set in beforeAll) ─────────────────────────────────
+let projectId: string;
+
 const SUPERADMIN = { username: 'superadmin', password: 'Admin@123' };
-const TEST_TASK_TITLE = `E2E-test-${Date.now()}`;
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -28,13 +32,28 @@ async function login(page: Page, username: string, password: string) {
 }
 
 async function goToKanban(page: Page) {
-  await page.goto(`/project/${PROJECT_ID}/kanban`);
+  await page.goto(`/project/${projectId}/kanban`);
   await page.waitForLoadState('networkidle');
+}
+
+/** Create a disposable task via the UI and return its title. */
+async function createTask(page: Page, title: string) {
+  await page.getByRole('button', { name: 'Add task to Backlog' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+  await page.fill('#task-title', title);
+  await page.getByRole('button', { name: 'Create Task' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(title)).toBeVisible({ timeout: 15_000 });
 }
 
 // ─── Tests ────────────────────────────────────────────────────
 
 test.describe('Kanban Board', () => {
+  test.beforeAll(async ({ request }) => {
+    const token = await loginViaApi(request);
+    projectId = await getOrCreateProjectId(request, token);
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page, SUPERADMIN.username, SUPERADMIN.password);
   });
@@ -44,7 +63,6 @@ test.describe('Kanban Board', () => {
     await expect(page.locator('h1', { hasText: 'Kanban Board' })).toBeVisible({
       timeout: 15_000,
     });
-    // All 4 columns visible
     for (const label of ['Backlog', 'Active', 'Review', 'Complete']) {
       await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
     }
@@ -52,115 +70,85 @@ test.describe('Kanban Board', () => {
 
   test('create task via "+" button — task appears in Backlog', async ({ page }) => {
     await goToKanban(page);
+    const taskTitle = `E2E-test-${Date.now()}`;
 
-    // Click "+" on the Backlog column
-    await page
-      .getByRole('button', { name: 'Add task to Backlog' })
-      .click();
-
-    // Dialog opens with "New Task" title
+    await page.getByRole('button', { name: 'Add task to Backlog' }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await expect(
-      page.getByRole('heading', { name: 'New Task' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'New Task' })).toBeVisible();
 
-    // Fill title and create
-    await page.fill('#task-title', TEST_TASK_TITLE);
+    await page.fill('#task-title', taskTitle);
     await page.getByRole('button', { name: 'Create Task' }).click();
 
-    // Dialog closes
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 });
-
-    // Task card appears on the board
-    await expect(page.getByText(TEST_TASK_TITLE)).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.getByText(taskTitle)).toBeVisible({ timeout: 15_000 });
   });
 
   test('edit task via click — dialog opens with correct data', async ({ page }) => {
     await goToKanban(page);
-
-    // Wait for board to load with tasks
     await expect(page.locator('h1', { hasText: 'Kanban Board' })).toBeVisible({
       timeout: 15_000,
     });
 
-    // Wait for task cards to render
     const firstCard = page.locator('h3.text-sm.font-medium').first();
     await expect(firstCard).toBeVisible({ timeout: 15_000 });
     const cardTitle = await firstCard.textContent();
     await firstCard.click();
 
-    // Edit dialog opens
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await expect(
-      page.getByRole('heading', { name: 'Edit Task' }),
-    ).toBeVisible();
-
-    // Title field has the task's title
+    await expect(page.getByRole('heading', { name: 'Edit Task' })).toBeVisible();
     await expect(page.locator('#task-title')).toHaveValue(cardTitle!.trim());
 
-    // Close dialog
     await page.getByRole('button', { name: 'Cancel' }).click();
   });
 
-  test('delete task — moves to trash, then restore', async ({ page }) => {
+  test('delete task — task moves to trash and disappears from board', async ({ page }) => {
     await goToKanban(page);
+    const title = `E2E-trash-${Date.now()}`;
+    await createTask(page, title);
 
-    // First create a disposable task
-    const trashTaskTitle = `E2E-trash-${Date.now()}`;
-    await page
-      .getByRole('button', { name: 'Add task to Backlog' })
-      .click();
+    await page.getByText(title).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-    await page.fill('#task-title', trashTaskTitle);
-    await page.getByRole('button', { name: 'Create Task' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(trashTaskTitle)).toBeVisible({ timeout: 15_000 });
-
-    // Click the task to open edit dialog
-    await page.getByText(trashTaskTitle).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-
-    // Click "Move to Trash"
     await page.getByRole('button', { name: 'Move to Trash' }).click();
-
-    // Dialog closes
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 });
 
-    // Task should no longer be on the main board
-    await expect(page.getByText(trashTaskTitle)).not.toBeVisible({ timeout: 5_000 });
+    // Task is gone from the main board
+    await expect(page.getByText(title)).not.toBeVisible({ timeout: 5_000 });
 
-    // Open trash panel
+    // Task appears in the trash panel
     await page.getByRole('button', { name: /Show Trash/i }).click();
+    await expect(page.getByText(title)).toBeVisible({ timeout: 15_000 });
+  });
 
-    // Task appears in trash
-    await expect(page.getByText(trashTaskTitle)).toBeVisible({ timeout: 15_000 });
+  test('restore task from trash — task returns to board', async ({ page }) => {
+    await goToKanban(page);
+    const title = `E2E-restore-${Date.now()}`;
+    await createTask(page, title);
 
-    // Restore the task
+    // Send to trash first
+    await page.getByText(title).click();
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+    await page.getByRole('button', { name: 'Move to Trash' }).click();
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 });
+
+    // Open trash panel and restore
+    await page.getByRole('button', { name: /Show Trash/i }).click();
+    await expect(page.getByText(title)).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'Restore' }).first().click();
-
-    // Wait for the task to reappear on the main board after restore
-    // (Trash panel might close or task might reappear in columns)
     await page.waitForTimeout(2_000);
 
-    // The restored task should be back on the board (re-navigate to ensure fresh view)
+    // Re-navigate to confirm the task is back on the board
     await goToKanban(page);
-    await expect(page.getByText(trashTaskTitle)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(title)).toBeVisible({ timeout: 15_000 });
   });
 
   test('archive toggle shows archived tasks', async ({ page }) => {
     await goToKanban(page);
 
-    // Click "Show Archived"
     await page.getByRole('button', { name: /Show Archived/i }).click();
-
-    // Button text changes to "Hide Archived"
     await expect(
       page.getByRole('button', { name: /Hide Archived/i }),
     ).toBeVisible({ timeout: 5_000 });
 
-    // Toggle back
     await page.getByRole('button', { name: /Hide Archived/i }).click();
     await expect(
       page.getByRole('button', { name: /Show Archived/i }),
@@ -170,22 +158,17 @@ test.describe('Kanban Board', () => {
   test('drag task from Backlog to Active — status updates', async ({ page }) => {
     await goToKanban(page);
 
-    // Find a task card in Backlog
+    // Create a dedicated task so the test is self-contained
+    const dragTitle = `E2E-drag-${Date.now()}`;
+    await createTask(page, dragTitle);
+
+    // Keyboard-based drag: focus the card → Space → ArrowRight → Space
     const backlogColumn = page.locator('[data-rfd-droppable-id="backlog"]');
-    await expect(backlogColumn).toBeVisible({ timeout: 15_000 });
+    await expect(backlogColumn).toBeVisible({ timeout: 10_000 });
 
-    const taskCard = backlogColumn.locator('h3').first();
-    const taskExists = (await taskCard.count()) > 0;
-
-    if (!taskExists) {
-      test.skip(true, 'No tasks in Backlog to drag');
-      return;
-    }
-
-    const taskTitle = await taskCard.textContent();
-
-    // Use keyboard-based drag: focus the draggable, press Space to lift, Arrow to move, Space to drop
-    const draggable = backlogColumn.locator('[data-rfd-draggable-id]').first();
+    const draggable = backlogColumn
+      .locator('[data-rfd-draggable-id]')
+      .filter({ hasText: dragTitle });
     await draggable.focus();
     await page.keyboard.press('Space');
     await page.waitForTimeout(300);
@@ -194,10 +177,7 @@ test.describe('Kanban Board', () => {
     await page.keyboard.press('Space');
     await page.waitForTimeout(500);
 
-    // Verify the task moved to Active column
     const activeColumn = page.locator('[data-rfd-droppable-id="active"]');
-    await expect(activeColumn.getByText(taskTitle!.trim())).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(activeColumn.getByText(dragTitle)).toBeVisible({ timeout: 10_000 });
   });
 });
