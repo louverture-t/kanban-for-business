@@ -2,8 +2,8 @@ import { cn } from '@client/lib/utils';
 import { useTheme } from '@client/components/theme-provider';
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <div className="flex items-center justify-between px-3 py-1.5">

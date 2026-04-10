@@ -11,6 +11,7 @@ import { ErrorBoundary } from '@client/components/error-boundary';
 import { SleepOverlay } from '@client/components/sleep-overlay';
 import { useIdleTimer } from '@client/hooks/use-idle-timer';
 import { SearchCommand } from '@client/components/search-command';
+import { Toaster } from '@client/components/toaster';
 
 const LoginPage = lazy(() => import('@client/pages/login').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('@client/pages/register').then(m => ({ default: m.RegisterPage })));
@@ -130,6 +131,7 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
             <AuthProvider>
+              <Toaster />
               <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
