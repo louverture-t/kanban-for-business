@@ -64,7 +64,15 @@ export const projectResolvers = {
       context: GraphQLContext,
     ) => {
       await requireProjectAccess(context, args.projectId);
-      return ProjectMember.find({ projectId: args.projectId }).populate('userId').exec();
+      const members = await ProjectMember.find({ projectId: args.projectId }).lean().exec();
+      const userIds = members.map((m) => m.userId);
+      const users = await User.find({ _id: { $in: userIds } }).lean().exec();
+      const userMap = new Map(users.map((u) => [String(u._id), u]));
+      return members.map((m) => ({
+        ...m,
+        userId: String(m.userId),
+        user: userMap.get(String(m.userId)) ?? null,
+      }));
     },
   },
 
@@ -236,5 +244,13 @@ export const projectResolvers = {
     memberCount: (parent: { _id: string }) => {
       return ProjectMember.countDocuments({ projectId: parent._id }).exec();
     },
+  },
+
+  ProjectMember: {
+    userId: (parent: { userId: unknown }) =>
+      parent.userId ? String(parent.userId) : '',
+
+    user: (parent: { userId: unknown }) =>
+      parent.userId ? User.findById(String(parent.userId)).exec() : null,
   },
 };

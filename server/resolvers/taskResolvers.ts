@@ -187,10 +187,17 @@ export const taskResolvers = {
 
       await requireProjectAccess(context, String(task.projectId));
 
-      // Owner-or-Manager+ guard: only assignee, creator, or Manager+ can update
+      // Any project member can move a task (status + position only — drag-and-drop).
+      // Editing other fields requires being the assignee, creator, or Manager+.
+      // GraphQL strips unknown fields before reaching the resolver, so this
+      // whitelist is authoritative — a client cannot smuggle extra keys.
+      const inputKeys = Object.keys(args.input);
+      const isDragOnly =
+        inputKeys.length > 0 &&
+        inputKeys.every((k) => k === 'status' || k === 'position');
       const isAssignee = task.assigneeId && String(task.assigneeId) === user.id;
       const isCreator = task.createdBy && String(task.createdBy) === user.id;
-      if (!isAssignee && !isCreator) {
+      if (!isDragOnly && !isAssignee && !isCreator) {
         requireManagerOrAbove(context);
       }
 
