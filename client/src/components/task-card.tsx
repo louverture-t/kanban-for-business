@@ -51,8 +51,11 @@ const PRIORITY_CONFIG: Record<TaskPriority, { label: string; className: string }
 
 /** Parse date that may be an epoch-ms string or ISO string. */
 function parseDate(value: string): Date {
-  const n = Number(value);
-  if (!isNaN(n)) return new Date(n);
+  // Epoch-ms string (13 digits, e.g. "1775606400000") — legacy server format
+  // before the GraphQL date normalization fix. Anything else (including "0",
+  // "2026", or "") falls through to `new Date(value)` which correctly
+  // produces Invalid Date for garbage input.
+  if (/^-?\d{13}$/.test(value)) return new Date(Number(value));
   return new Date(value);
 }
 
