@@ -68,6 +68,7 @@ test-results/
 playwright-report/
 e2e/debug-*.png
 e2e/debug-*.spec.ts
+.playwright-cli/
 
 # ===========================================
 # Logs / Debug
