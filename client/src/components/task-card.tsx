@@ -49,12 +49,25 @@ const PRIORITY_CONFIG: Record<TaskPriority, { label: string; className: string }
 
 // ─── Date helpers ──────────────────────────────────────────
 
+/** Parse date that may be an epoch-ms string or ISO string. */
+function parseDate(value: string): Date {
+  const n = Number(value);
+  if (!isNaN(n)) return new Date(n);
+  return new Date(value);
+}
+
+function isValidDate(value: string): boolean {
+  return !isNaN(parseDate(value).getTime());
+}
+
 function isOverdue(dueDate: string): boolean {
-  return new Date(dueDate) < new Date();
+  return isValidDate(dueDate) && parseDate(dueDate) < new Date();
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, {
+  const d = parseDate(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
   });
@@ -144,7 +157,7 @@ export function TaskCard({
       {/* Bottom row: metadata */}
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {/* Due date */}
-        {task.dueDate && (
+        {task.dueDate && isValidDate(task.dueDate) && (
           <span
             className={cn(
               'inline-flex items-center gap-1',

@@ -97,14 +97,13 @@ test.describe('AI Decompose dialog', () => {
     // Analyze
     await page.getByRole('dialog').getByRole('button', { name: 'Analyze' }).click();
 
-    // Step 2 — preview cards appear
-    await expect(page.getByRole('dialog').getByText('Draft billing audit plan')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('dialog').getByText('Schedule staff training')).toBeVisible();
+    // Step 2 — preview cards appear (assert on structure, not mock text)
+    const titleInputs_step2 = page.getByRole('dialog').getByPlaceholder('Task title');
+    await expect(titleInputs_step2).toHaveCount(2, { timeout: 10_000 });
 
     // Edit first task title
-    const titleInputs = page.getByRole('dialog').getByPlaceholder('Task title');
-    await titleInputs.first().fill('Revised billing audit plan');
-    await expect(titleInputs.first()).toHaveValue('Revised billing audit plan');
+    await titleInputs_step2.first().fill('Revised billing audit plan');
+    await expect(titleInputs_step2.first()).toHaveValue('Revised billing audit plan');
 
     // Add a new task
     await page.getByRole('dialog').getByRole('button', { name: 'Add Task' }).click();
@@ -136,8 +135,8 @@ test.describe('AI Decompose dialog', () => {
     await page.getByRole('dialog').getByRole('textbox').first().fill('test input');
     await page.getByRole('dialog').getByRole('button', { name: 'Analyze' }).click();
 
-    // Wait for preview cards
-    await expect(page.getByRole('dialog').getByText('Draft billing audit plan')).toBeVisible({ timeout: 10_000 });
+    // Wait for preview cards (assert on structure, not mock text)
+    await expect(page.getByRole('dialog').getByPlaceholder('Task title')).toHaveCount(2, { timeout: 10_000 });
 
     // Add a blank task — Confirm must become disabled
     await page.getByRole('dialog').getByRole('button', { name: 'Add Task' }).click();
