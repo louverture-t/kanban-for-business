@@ -8,6 +8,23 @@ import { tagResolvers } from './tagResolvers.js';
 import { notificationResolvers } from './notificationResolvers.js';
 import { adminResolvers } from './adminResolvers.js';
 import { aiResolvers } from './aiResolvers.js';
+import { toISO } from '@server/utils/dates.js';
+
+// ─── Date normalization ──────────────────────────────────────
+//
+// The GraphQL schema declares every date field as `String`, but Mongoose
+// stores them as native `Date`. Apollo's default String scalar coerces
+// Date via valueOf() → epoch-ms number → string (e.g. "1775606400000"),
+// which is undocumented and fragile for clients.
+//
+// These field resolvers force every date field to serialize as ISO-8601
+// (e.g. "2026-04-15T00:00:00.000Z"), which is unambiguous and parseable
+// by the browser's `new Date(str)`. See server/utils/dates.ts.
+
+const dateFields = <T extends string>(...fields: T[]) =>
+  Object.fromEntries(
+    fields.map((f) => [f, (parent: Record<string, unknown>) => toISO(parent[f])]),
+  ) as Record<T, (parent: Record<string, unknown>) => string | null>;
 
 export const resolvers = {
   Query: {
@@ -33,14 +50,36 @@ export const resolvers = {
     ...adminResolvers.Mutation,
     ...aiResolvers.Mutation,
   },
-  // Field resolvers
+  // ─── Type field resolvers ──────────────────────────────────
+  // Existing relationship resolvers are spread first, then date
+  // normalizers override any date fields to return ISO-8601 strings.
+  User: dateFields('lockedUntil', 'createdAt', 'updatedAt'),
   Project: {
     ...projectResolvers.Project,
+    ...dateFields('startDate', 'endDate', 'createdAt', 'updatedAt'),
   },
+  ProjectFolder: dateFields('createdAt', 'updatedAt'),
+  ProjectMember: dateFields('addedAt'),
   Task: {
     ...taskResolvers.Task,
+    ...dateFields(
+      'startDate',
+      'dueDate',
+      'archivedAt',
+      'completedAt',
+      'deletedAt',
+      'createdAt',
+      'updatedAt',
+    ),
   },
+  Subtask: dateFields('createdAt', 'updatedAt'),
+  Tag: dateFields('createdAt', 'updatedAt'),
+  TaskTag: dateFields('createdAt'),
   Comment: {
     ...commentResolvers.Comment,
+    ...dateFields('createdAt', 'updatedAt'),
   },
+  AuditLog: dateFields('createdAt'),
+  Notification: dateFields('createdAt', 'updatedAt'),
+  Invitation: dateFields('expiresAt', 'createdAt', 'updatedAt'),
 };
