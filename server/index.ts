@@ -19,6 +19,7 @@ import { seedDatabase } from '@server/seed.js';
 // --- Express + HTTP server ---
 const app = express();
 const httpServer = http.createServer(app);
+let appReady = false;
 
 // Render (and most PaaS) reverse-proxies requests; trust the first proxy
 // so express-rate-limit reads the real client IP from X-Forwarded-For.
@@ -63,6 +64,10 @@ const uploadLimiter = rateLimit({
 
 // Health check (REST)
 app.get('/api/health', (_req, res) => {
+  if (!appReady) {
+    res.status(503).json({ status: 'starting' });
+    return;
+  }
   res.json({ status: 'ok' });
 });
 
@@ -146,3 +151,4 @@ console.log(`💊 Health: http://localhost:${PORT}/api/health`);
 // --- Connect DB + seed after port is bound ---
 await connectDB();
 await seedDatabase();
+appReady = true;
