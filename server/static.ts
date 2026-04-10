@@ -14,6 +14,13 @@ export function setupStaticServing(app: Express): void {
     }),
   );
 
+  // If a hashed asset isn't found, 404 it explicitly. Without this, the
+  // SPA wildcard fallback below would return index.html with an HTML MIME
+  // type, breaking dynamic imports for already-open tabs after a new deploy.
+  app.use('/assets', (_req, res) => {
+    res.status(404).type('text/plain').send('Asset not found');
+  });
+
   // Other static files at the root (favicon, robots.txt, manifest, etc.)
   app.use(express.static(clientDist, { maxAge: 0 }));
 
