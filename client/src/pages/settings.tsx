@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useTheme } from '@client/components/theme-provider';
 import { ProjectDialog } from '@client/components/project-dialog';
+import { useAuth } from '@client/hooks/use-auth';
+import { useToast } from '@client/hooks/use-toast';
 import { Button } from '@client/components/ui/button';
+import { Input } from '@client/components/ui/input';
+import { Label } from '@client/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@client/components/ui/card';
 import {
   AlertDialog,
@@ -18,17 +22,70 @@ import {
 import { PROJECTS_QUERY, DELETE_PROJECT_MUTATION, FOLDERS_QUERY } from '@client/graphql/operations';
 import type { IProject, IProjectFolder } from '@shared/types';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'system';
 
 const THEME_OPTIONS: { value: Theme; label: string; description: string }[] = [
   { value: 'light', label: 'Light', description: 'Clean white background' },
   { value: 'dark', label: 'Dark', description: 'Easy on the eyes' },
+  { value: 'system', label: 'System', description: 'Match OS preference' },
 ];
+
+const DISPLAY_NAME_STORAGE_KEY = 'k4b-display-name';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<IProject | null>(null);
+
+  // Display name (client-side preference)
+  const initialDisplayName = useMemo(() => {
+    if (typeof window === 'undefined') return user?.username ?? '';
+    return localStorage.getItem(DISPLAY_NAME_STORAGE_KEY) ?? user?.username ?? '';
+  }, [user?.username]);
+  const [displayName, setDisplayName] = useState(initialDisplayName);
+  const [savedDisplayName, setSavedDisplayName] = useState(initialDisplayName);
+
+  // If user loads later (auth resolves async), hydrate the field once.
+  useEffect(() => {
+    if (!user?.username) return;
+    const stored = typeof window !== 'undefined'
+      ? localStorage.getItem(DISPLAY_NAME_STORAGE_KEY)
+      : null;
+    const next = stored ?? user.username;
+    setDisplayName(next);
+    setSavedDisplayName(next);
+  }, [user?.username]);
+
+  function handleSaveDisplayName() {
+    const trimmed = displayName.trim();
+    if (!trimmed) {
+      toast({
+        title: 'Display name required',
+        description: 'Please enter a name before saving.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      localStorage.setItem(DISPLAY_NAME_STORAGE_KEY, trimmed);
+      setSavedDisplayName(trimmed);
+      setDisplayName(trimmed);
+      toast({
+        title: 'Display name saved',
+        description: `You'll now appear as "${trimmed}" on this device.`,
+      });
+    } catch {
+      toast({
+        title: 'Save failed',
+        description: 'Unable to store your display name on this device.',
+        variant: 'destructive',
+      });
+    }
+  }
+
+  const displayNameDirty = displayName.trim() !== savedDisplayName.trim();
 
   const { data, refetch } = useQuery<{ projects: IProject[] }>(PROJECTS_QUERY);
   const { data: foldersData } = useQuery<{ folders: IProjectFolder[] }>(FOLDERS_QUERY);
@@ -57,6 +114,37 @@ export function SettingsPage() {
         <p className="mt-1 text-sm text-muted-foreground">Manage your preferences and projects.</p>
       </div>
 
+      {/* Profile */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Your display name is stored on this device.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <Label htmlFor="display-name">Display name</Label>
+              <Input
+                id="display-name"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={user?.username ?? 'Your name'}
+                autoComplete="nickname"
+                maxLength={60}
+              />
+            </div>
+            <Button
+              onClick={handleSaveDisplayName}
+              disabled={!displayNameDirty || !displayName.trim()}
+              className="sm:w-auto"
+            >
+              Save
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Theme */}
       <Card>
         <CardHeader>
@@ -64,12 +152,14 @@ export function SettingsPage() {
           <CardDescription>Choose how K4B looks on your device.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             {THEME_OPTIONS.map(({ value, label, description }) => (
               <button
                 key={value}
+                type="button"
                 onClick={() => setTheme(value)}
-                className={`flex flex-1 flex-col rounded-lg border-2 p-3 text-left transition-colors ${
+                aria-pressed={theme === value}
+                className={`flex flex-1 flex-col rounded-lg border-2 p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   theme === value
                     ? 'border-primary bg-primary/10'
                     : 'border-border hover:border-primary/50'

@@ -10,6 +10,7 @@ export const ADMIN_USERS_QUERY = gql`
       email
       role
       active
+      createdAt
     }
   }
 `;

@@ -93,12 +93,31 @@ function InviteStatusBadge({ status }: { status: string }) {
 
 // ─── AdminPage ─────────────────────────────────────────────
 
+type UserRole = 'user' | 'manager' | 'superadmin';
+
+interface IPendingRoleChange {
+  userId: string;
+  username: string;
+  currentRole: UserRole;
+  newRole: UserRole;
+}
+
+function formatCreatedAt(value: string | undefined): string {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString();
+}
+
 export function AdminPage() {
   const { user } = useAuth();
   const currentUserId = user?._id ?? '';
 
   // Live region feedback
   const [announcement, setAnnouncement] = useState('');
+
+  // Pending role-change (opens confirmation dialog)
+  const [pendingRoleChange, setPendingRoleChange] = useState<IPendingRoleChange | null>(null);
 
   // ── Users ──
   const { data: usersData, refetch: refetchUsers } = useQuery<{ adminUsers: IUserRow[] }>(ADMIN_USERS_QUERY);
@@ -110,6 +129,28 @@ export function AdminPage() {
       setAnnouncement('User updated successfully.');
     },
   });
+
+  function handleRoleSelect(u: IUserRow, nextRole: string) {
+    if (nextRole === u.role) return;
+    setPendingRoleChange({
+      userId: u._id,
+      username: u.username,
+      currentRole: u.role,
+      newRole: nextRole as UserRole,
+    });
+  }
+
+  function confirmRoleChange() {
+    if (!pendingRoleChange) return;
+    updateUser({
+      variables: { id: pendingRoleChange.userId, role: pendingRoleChange.newRole },
+    });
+    setPendingRoleChange(null);
+  }
+
+  function cancelRoleChange() {
+    setPendingRoleChange(null);
+  }
 
   // ── Invitations ──
   const { data: invData, refetch: refetchInvitations } = useQuery<{ adminInvitations: IInvitationRow[] }>(ADMIN_INVITATIONS_QUERY);
@@ -186,6 +227,31 @@ export function AdminPage() {
         {announcement}
       </div>
 
+      {/* Role-change confirmation dialog (controlled) */}
+      <AlertDialog
+        open={pendingRoleChange !== null}
+        onOpenChange={(open) => { if (!open) cancelRoleChange(); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingRoleChange
+                ? `Change role for ${pendingRoleChange.username}?`
+                : 'Change role?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRoleChange
+                ? `This will change ${pendingRoleChange.username}'s role from ${pendingRoleChange.currentRole} to ${pendingRoleChange.newRole}. Their permissions will update immediately.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelRoleChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRoleChange}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div>
         <h1 id="admin-heading" className="text-2xl font-bold tracking-tight text-foreground">
           Admin Panel
@@ -212,6 +278,7 @@ export function AdminPage() {
                     <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Username</th>
                     <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</th>
                     <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Role</th>
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Created</th>
                     <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
                     <th scope="col" className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</th>
                   </tr>
@@ -226,11 +293,13 @@ export function AdminPage() {
                         <td className="px-3 py-2">
                           <Select
                             value={u.role}
-                            onValueChange={(v) => updateUser({ variables: { id: u._id, role: v } })}
+                            onValueChange={(v) => handleRoleSelect(u, v)}
                           >
                             <SelectTrigger
                               className="h-8 w-32 focus-visible:ring-2 focus-visible:ring-ring"
                               aria-label={`Role for ${u.username}`}
+                              disabled={isSelf}
+                              title={isSelf ? 'Cannot change your own role' : undefined}
                             >
                               <SelectValue />
                             </SelectTrigger>
@@ -240,6 +309,9 @@ export function AdminPage() {
                               <SelectItem value="superadmin">Superadmin</SelectItem>
                             </SelectContent>
                           </Select>
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {formatCreatedAt(u.createdAt)}
                         </td>
                         <td className="px-3 py-2">
                           <Badge variant={u.active ? 'default' : 'secondary'}>
@@ -286,7 +358,7 @@ export function AdminPage() {
                   })}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                      <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
                         No users found.
                       </td>
                     </tr>
