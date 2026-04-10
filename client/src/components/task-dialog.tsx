@@ -272,7 +272,8 @@ export function TaskDialog({
 
   // ── Permission derived values ───────────────────────────
   const isOwner = isEdit && (taskData as any)?.task?.createdBy === user?._id;
-  const canEditOrTrash = isOwner || isManagerOrAbove;
+  const isAssignee = isEdit && (taskData as any)?.task?.assigneeId === user?._id;
+  const canEditOrTrash = isOwner || isAssignee || isManagerOrAbove;
 
   // ── Derived data ────────────────────────────────────────
   const task: ITask | undefined = (taskData as any)?.task;
