@@ -71,7 +71,10 @@ export const resolvers = {
     ...dateFields('startDate', 'endDate', 'createdAt', 'updatedAt'),
   },
   ProjectFolder: dateFields('createdAt', 'updatedAt'),
-  ProjectMember: dateFields('addedAt'),
+  ProjectMember: {
+    ...projectResolvers.ProjectMember,
+    ...dateFields('addedAt'),
+  },
   Task: {
     ...taskResolvers.Task,
     ...dateFields(

@@ -278,6 +278,7 @@ const typeDefs = `#graphql
     # Admin
     adminUsers: [User!]!
     adminInvitations: [Invitation!]!
+    assignableUsers: [User!]!
   }
 
   # ─── Mutations ────────────────────────────────────────────

@@ -67,7 +67,7 @@ import {
   ADD_TAG_TO_TASK_MUTATION,
   REMOVE_TAG_FROM_TASK_MUTATION,
   AUDIT_LOGS_QUERY,
-  PROJECT_MEMBERS_QUERY,
+  ASSIGNABLE_USERS_QUERY,
   AI_GENERATE_SUBTASKS_MUTATION,
   TASKS_QUERY,
 } from '@client/graphql/operations';
@@ -78,7 +78,6 @@ import type {
   IComment,
   ITag,
   IAuditLog,
-  IProjectMember,
 } from '@shared/types';
 import { TaskStatus, TaskPriority } from '@shared/types';
 
@@ -250,9 +249,7 @@ export function TaskDialog({
     skip: !isEdit || !taskId,
   });
 
-  const { data: membersData } = useQuery(PROJECT_MEMBERS_QUERY, {
-    variables: { projectId },
-  });
+  const { data: assignableUsersData } = useQuery(ASSIGNABLE_USERS_QUERY);
 
   // ── Mutations ───────────────────────────────────────────
   const [createTask] = useMutation(CREATE_TASK_MUTATION);
@@ -282,7 +279,8 @@ export function TaskDialog({
   const taskTags: ITag[] = (taskTagsData as any)?.taskTags ?? [];
   const allTags: ITag[] = (allTagsData as any)?.tags ?? [];
   const auditLogs: IAuditLog[] = (auditData as any)?.auditLogs ?? [];
-  const members: IProjectMember[] = (membersData as any)?.projectMembers ?? [];
+  const assignableUsers: { _id: string; username: string }[] =
+    (assignableUsersData as any)?.assignableUsers ?? [];
 
   // Tags available to add (not already on this task)
   const availableTags = allTags.filter(
@@ -671,9 +669,9 @@ export function TaskDialog({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__none__">Unassigned</SelectItem>
-            {members.map((m) => (
-              <SelectItem key={m.userId} value={m.userId}>
-                {m.user?.username ?? m.userId}
+            {assignableUsers.map((u) => (
+              <SelectItem key={u._id} value={u._id}>
+                {u.username}
               </SelectItem>
             ))}
           </SelectContent>

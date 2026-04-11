@@ -219,12 +219,15 @@ export function AdminPage() {
   const memberIds = useMemo(() => new Set(members.map((m) => m.userId)), [members]);
   const nonMembers = useMemo(() => users.filter((u) => !memberIds.has(u._id)), [users, memberIds]);
 
-  const [addMember] = useMutation(ADD_PROJECT_MEMBER_MUTATION, {
+  const [memberError, setMemberError] = useState('');
+  const [addMember, { loading: addingMember }] = useMutation(ADD_PROJECT_MEMBER_MUTATION, {
     onCompleted: () => {
       setAddUserId('');
+      setMemberError('');
       setAnnouncement('Member added to project.');
       refetchMembers();
     },
+    onError: (e) => setMemberError(e.message),
   });
   const [removeMember] = useMutation(REMOVE_PROJECT_MEMBER_MUTATION, {
     onCompleted: () => {
@@ -555,13 +558,19 @@ export function AdminPage() {
                   </div>
                   <Button
                     onClick={() => addMember({ variables: { projectId: selectedProjectId, userId: addUserId } })}
-                    disabled={!addUserId}
+                    disabled={!addUserId || addingMember}
+                    aria-busy={addingMember}
                     aria-label="Add selected user to project"
                     className="focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    Add
+                    {addingMember ? 'Adding…' : 'Add'}
                   </Button>
                 </div>
+                {memberError && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {memberError}
+                  </p>
+                )}
 
                 <div className="overflow-hidden rounded-lg border border-border">
                   <table className="w-full text-sm" aria-label="Project members">

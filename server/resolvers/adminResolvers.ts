@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { User, Invitation, AuditLog } from '@server/models/index.js';
-import { requireSuperadmin, type GraphQLContext } from '@server/utils/auth.js';
+import { requireAuth, requireSuperadmin, type GraphQLContext } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
 
@@ -17,6 +17,11 @@ export const adminResolvers = {
     adminInvitations: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireSuperadmin(context);
       return Invitation.find().sort({ createdAt: -1 }).exec();
+    },
+
+    assignableUsers: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+      requireAuth(context);
+      return User.find({ active: true }).select('_id username').sort({ username: 1 }).exec();
     },
   },
 
