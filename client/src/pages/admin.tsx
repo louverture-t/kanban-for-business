@@ -120,7 +120,11 @@ export function AdminPage() {
   const [pendingRoleChange, setPendingRoleChange] = useState<IPendingRoleChange | null>(null);
 
   // ── Users ──
-  const { data: usersData, refetch: refetchUsers } = useQuery<{ adminUsers: IUserRow[] }>(
+  const {
+    data: usersData,
+    error: usersError,
+    refetch: refetchUsers,
+  } = useQuery<{ adminUsers: IUserRow[] }>(
     ADMIN_USERS_QUERY,
     { skip: authLoading || !user },
   );
@@ -156,7 +160,11 @@ export function AdminPage() {
   }
 
   // ── Invitations ──
-  const { data: invData, refetch: refetchInvitations } = useQuery<{ adminInvitations: IInvitationRow[] }>(
+  const {
+    data: invData,
+    error: invitationsError,
+    refetch: refetchInvitations,
+  } = useQuery<{ adminInvitations: IInvitationRow[] }>(
     ADMIN_INVITATIONS_QUERY,
     { skip: authLoading || !user },
   );
@@ -277,6 +285,14 @@ export function AdminPage() {
         {/* ─── Tab 1: Users ─── */}
         <TabsContent value="users" className="mt-4">
           <section aria-label="User management">
+            {usersError && (
+              <div
+                role="alert"
+                className="mb-3 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                Failed to load users: {usersError.message}
+              </div>
+            )}
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[560px] text-sm" aria-label="Users">
                 <thead>
@@ -378,6 +394,14 @@ export function AdminPage() {
         {/* ─── Tab 2: Invitations ─── */}
         <TabsContent value="invitations" className="mt-4 space-y-4">
           <section aria-label="Invitation management">
+            {invitationsError && (
+              <div
+                role="alert"
+                className="mb-3 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                Failed to load invitations: {invitationsError.message}
+              </div>
+            )}
             <fieldset className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/20 p-4">
               <legend className="sr-only">Create a new invitation</legend>
               <div className="flex flex-col gap-1.5">
@@ -451,7 +475,7 @@ export function AdminPage() {
                       <td className="px-3 py-2 capitalize text-muted-foreground">{inv.role}</td>
                       <td className="px-3 py-2"><InviteStatusBadge status={inv.status} /></td>
                       <td className="px-3 py-2 text-muted-foreground">
-                        {new Date(Number(inv.expiresAt)).toLocaleDateString()}
+                        {new Date(inv.expiresAt).toLocaleDateString()}
                       </td>
                       <td className="px-3 py-2">
                         <Button
@@ -513,9 +537,19 @@ export function AdminPage() {
                         <SelectValue placeholder="Select user" />
                       </SelectTrigger>
                       <SelectContent>
-                        {nonMembers.map((u) => (
-                          <SelectItem key={u._id} value={u._id}>{u.username}</SelectItem>
-                        ))}
+                        {usersError ? (
+                          <SelectItem value="__empty__" disabled>
+                            Could not load users — try refreshing.
+                          </SelectItem>
+                        ) : nonMembers.length === 0 ? (
+                          <SelectItem value="__empty__" disabled>
+                            All users are already members of this project.
+                          </SelectItem>
+                        ) : (
+                          nonMembers.map((u) => (
+                            <SelectItem key={u._id} value={u._id}>{u.username}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -538,16 +572,18 @@ export function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.map((m) => (
+                      {members.map((m) => {
+                        const displayName = m.user?.username ?? '(unknown user)';
+                        return (
                         <tr key={m._id} className="border-b border-border last:border-0">
-                          <td className="px-3 py-2 text-foreground">{m.user.username}</td>
+                          <td className="px-3 py-2 text-foreground">{displayName}</td>
                           <td className="px-3 py-2">
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  aria-label={`Remove ${m.user.username} from project`}
+                                  aria-label={`Remove ${displayName} from project`}
                                   className="focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                   Remove
@@ -555,7 +591,7 @@ export function AdminPage() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove {m.user.username}?</AlertDialogTitle>
+                                  <AlertDialogTitle>Remove {displayName}?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     This user will lose access to this project's tasks and board.
                                   </AlertDialogDescription>
@@ -572,7 +608,8 @@ export function AdminPage() {
                             </AlertDialog>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                       {members.length === 0 && (
                         <tr>
                           <td colSpan={2} className="px-3 py-8 text-center text-sm text-muted-foreground">

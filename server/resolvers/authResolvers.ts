@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { User, AuditLog, Invitation } from '@server/models/index.js';
+import { User, AuditLog, Invitation, ProjectMember } from '@server/models/index.js';
 import {
   signAccessToken,
   signRefreshToken,
@@ -171,6 +171,20 @@ export const authResolvers = {
 
       // Mark invitation accepted
       await Invitation.findByIdAndUpdate(invitation._id, { status: 'accepted' });
+
+      // If the invitation was tied to a specific project, add the new user as a member
+      if (invitation.projectId) {
+        const alreadyMember = await ProjectMember.findOne({
+          projectId: invitation.projectId,
+          userId: user._id,
+        });
+        if (!alreadyMember) {
+          await ProjectMember.create({
+            projectId: invitation.projectId,
+            userId: user._id,
+          });
+        }
+      }
 
       const payload = toTokenPayload(user);
       const { token } = await issueTokens(payload, context);

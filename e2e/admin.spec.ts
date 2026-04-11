@@ -174,18 +174,25 @@ test.describe('Admin Panel', () => {
     // Open the add-user dropdown
     const addUserSelect = page.locator('#add-user');
     await addUserSelect.click();
-    const options = page.getByRole('option');
-    const optionCount = await options.count();
+
+    // Count only non-disabled options (disabled = empty-state placeholder)
+    const selectableOptions = page.locator('[role="option"]:not([aria-disabled="true"])');
+    const optionCount = await selectableOptions.count();
 
     if (optionCount === 0) {
+      // Empty-state path: dropdown opens and shows direct feedback; Add button stays disabled
+      await expect(
+        page.getByRole('option', { name: 'All users are already members of this project.' }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Add selected user to project' }),
+      ).toBeDisabled();
       await page.keyboard.press('Escape');
-      // All users are already members — genuine data constraint, not a bug
-      test.skip(true, 'All users are already project members — add another user first');
       return;
     }
 
-    const addedUsername = await options.first().textContent();
-    await options.first().click();
+    const addedUsername = await selectableOptions.first().textContent();
+    await selectableOptions.first().click();
 
     await page.getByRole('button', { name: 'Add selected user to project' }).click();
 
