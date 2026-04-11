@@ -514,6 +514,17 @@ export const PROJECT_MEMBERS_QUERY = gql`
   }
 `;
 
+// ─── Assignable Users ────────────────────────────────────
+
+export const ASSIGNABLE_USERS_QUERY = gql`
+  query AssignableUsers {
+    assignableUsers {
+      _id
+      username
+    }
+  }
+`;
+
 // ─── AI ──────────────────────────────────────────────────
 
 export const AI_GENERATE_SUBTASKS_MUTATION = gql`
