@@ -1,10 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const LOCAL_URL = 'http://localhost:3001';
+const LOCAL_URL = 'http://localhost:5173';
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 90_000,
+  timeout: 30000,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   use: {
@@ -24,8 +24,8 @@ export default defineConfig({
     : {
         webServer: {
           command: 'npm run dev',
-          url: `${LOCAL_URL}/api/health`,
-          reuseExistingServer: false,
+          url: LOCAL_URL,
+          reuseExistingServer: !process.env.CI,
           timeout: 60_000,
         },
       }),
