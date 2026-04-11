@@ -11,6 +11,7 @@
 **Team Members:**
 - Louverture-t
 - SoloDev-Joe 
+- Claude Code, VS code, AI 
 
 **Elevator Pitch (1 minute):**
 Kanban for Business is a Kanban-style project management app built for AIDP. It features five task visualization modes (Dashboard, Kanban, Priority, Roadmap, Team), three-tier role-based access control, AI-powered task decomposition and subtask generation: all deployed on Render with MongoDB Atlas.
