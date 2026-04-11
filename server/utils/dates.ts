@@ -22,3 +22,18 @@ export function toISO(value: unknown): string | null {
   const d = new Date(value as string | number);
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+/**
+ * Like toISO but returns a non-null fallback for use in non-nullable
+ * GraphQL fields (`String!`). If the stored value is missing/invalid,
+ * the provided `fallback` callback is called to supply a default Date
+ * (e.g. derived from the document's ObjectId timestamp).
+ */
+export function toISORequired(value: unknown, fallback: () => Date): string {
+  if (value == null) return fallback().toISOString();
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? fallback().toISOString() : value.toISOString();
+  }
+  const d = new Date(value as string | number);
+  return isNaN(d.getTime()) ? fallback().toISOString() : d.toISOString();
+}

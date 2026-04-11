@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { User, AuditLog, Invitation } from '@server/models/index.js';
+import { User, AuditLog, Invitation, ProjectMember, Project } from '@server/models/index.js';
 import { authResolvers } from '@server/resolvers/authResolvers.js';
 import {
   signAccessToken,
@@ -66,6 +66,7 @@ async function createInvitation(overrides: Partial<{
   status: string;
   expiresAt: Date;
   invitedBy: mongoose.Types.ObjectId;
+  projectId: mongoose.Types.ObjectId;
 }> = {}) {
   return Invitation.create({
     email: overrides.email ?? 'invite@test.com',
@@ -74,6 +75,7 @@ async function createInvitation(overrides: Partial<{
     status: overrides.status ?? 'pending',
     expiresAt: overrides.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     invitedBy: overrides.invitedBy ?? new mongoose.Types.ObjectId(),
+    ...(overrides.projectId ? { projectId: overrides.projectId } : {}),
   });
 }
 
@@ -85,6 +87,8 @@ beforeEach(async () => {
   await User.deleteMany({});
   await AuditLog.deleteMany({});
   await Invitation.deleteMany({});
+  await Project.deleteMany({});
+  await ProjectMember.deleteMany({});
 });
 
 // ─── me ────────────────────────��────────────────���───────────
@@ -354,6 +358,61 @@ describe('register mutation', () => {
         token: 'valid-invite-token',
       }, ctx),
     ).rejects.toThrow(/already taken/);
+  });
+
+  it('creates ProjectMember when invitation has a projectId', async () => {
+    const superadmin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    const project = await Project.create({
+      name: 'Test Project',
+      createdBy: superadmin._id,
+    });
+    await createInvitation({
+      token: 'proj-invite-token',
+      projectId: project._id,
+    });
+    const ctx = mockContext();
+
+    await Mutation.register(null, {
+      username: 'newmember',
+      password: VALID_PASSWORD,
+      token: 'proj-invite-token',
+    }, ctx);
+
+    const newUser = await User.findOne({ username: 'newmember' });
+    const membership = await ProjectMember.findOne({
+      projectId: project._id,
+      userId: newUser!._id,
+    });
+    expect(membership).not.toBeNull();
+  });
+
+  it('is idempotent — does not duplicate ProjectMember if already exists', async () => {
+    const superadmin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    const project = await Project.create({
+      name: 'Another Project',
+      createdBy: superadmin._id,
+    });
+    // Pre-create the user and membership before registration runs
+    const preUser = await createTestUser({ username: 'preexisting' });
+    await ProjectMember.create({ projectId: project._id, userId: preUser._id });
+
+    // Create a second invitation for the same project (different token/email)
+    await createInvitation({
+      email: 'second@test.com',
+      token: 'second-invite-token',
+      projectId: project._id,
+    });
+
+    const ctx = mockContext();
+    await Mutation.register(null, {
+      username: 'newmember2',
+      password: VALID_PASSWORD,
+      token: 'second-invite-token',
+    }, ctx);
+
+    const count = await ProjectMember.countDocuments({ projectId: project._id });
+    // preexisting + newmember2 = 2
+    expect(count).toBe(2);
   });
 });
 

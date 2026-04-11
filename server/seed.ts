@@ -21,7 +21,19 @@ export async function seedDatabase(): Promise<void> {
       role: 'manager',
       mustChangePassword: false,
     },
+    {
+      username: 'user1',
+      password: 'User1@123',
+      role: 'user',
+      mustChangePassword: false,
+    },
+    {
+      username: 'user2',
+      password: 'User2@123',
+      role: 'user',
+      mustChangePassword: false,
+    },
   ]);
 
-  console.log('🌱 Seeded: superadmin (Admin@123) and admin (admin123)');
+  console.log('🌱 Seeded: superadmin (Admin@123), admin (admin123), user1 (User1@123), user2 (User2@123)');
 }

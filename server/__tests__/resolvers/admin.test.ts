@@ -68,6 +68,26 @@ describe('adminUsers query', () => {
 
     expect(() => Query.adminUsers(null, {}, ctx)).toThrow();
   });
+
+  it('returns users even if createdAt is missing on a document', async () => {
+    const admin = await createTestUser({ username: 'admin', role: 'superadmin' });
+    // Insert a legacy doc directly via Mongoose's collection to bypass timestamps
+    await User.collection.insertOne({
+      _id: new mongoose.Types.ObjectId(),
+      username: 'legacy-user',
+      password: 'hashed',
+      role: 'user',
+      active: true,
+      failedAttempts: 0,
+      mustChangePassword: false,
+      // createdAt / updatedAt intentionally omitted
+    });
+
+    const ctx = mockContext({ user: superadminPayload(String(admin._id)) });
+    // Should not throw — toISORequired provides fallback for missing timestamps
+    const result = await Query.adminUsers(null, {}, ctx);
+    expect(result.length).toBeGreaterThanOrEqual(2);
+  });
 });
 
 // ─── adminInvitations ───────────────────────────────────────

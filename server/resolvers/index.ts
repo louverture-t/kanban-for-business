@@ -8,7 +8,7 @@ import { tagResolvers } from './tagResolvers.js';
 import { notificationResolvers } from './notificationResolvers.js';
 import { adminResolvers } from './adminResolvers.js';
 import { aiResolvers } from './aiResolvers.js';
-import { toISO } from '@server/utils/dates.js';
+import { toISO, toISORequired } from '@server/utils/dates.js';
 
 // ─── Date normalization ──────────────────────────────────────
 //
@@ -53,7 +53,19 @@ export const resolvers = {
   // ─── Type field resolvers ──────────────────────────────────
   // Existing relationship resolvers are spread first, then date
   // normalizers override any date fields to return ISO-8601 strings.
-  User: dateFields('lockedUntil', 'createdAt', 'updatedAt'),
+  // createdAt/updatedAt are declared String! (non-nullable) on the User type.
+  // Legacy documents inserted before timestamps were enabled may lack these
+  // fields. toISORequired falls back to the ObjectId-embedded timestamp so
+  // the GraphQL non-null contract is never violated.
+  User: {
+    lockedUntil: (parent: Record<string, unknown>) => toISO(parent['lockedUntil']),
+    createdAt: (parent: Record<string, unknown>) =>
+      toISORequired(parent['createdAt'], () =>
+        new Date((parent['_id'] as { getTimestamp(): Date }).getTimestamp())),
+    updatedAt: (parent: Record<string, unknown>) =>
+      toISORequired(parent['updatedAt'], () =>
+        new Date((parent['_id'] as { getTimestamp(): Date }).getTimestamp())),
+  },
   Project: {
     ...projectResolvers.Project,
     ...dateFields('startDate', 'endDate', 'createdAt', 'updatedAt'),
