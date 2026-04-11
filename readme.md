@@ -90,7 +90,7 @@ Never commit secrets to source control.
 ### 4. Run the app
 
 ```bash
-npm run develop
+npm run dev
 ```
 
 ## Testing and Quality
@@ -102,16 +102,17 @@ npm run develop
 
 ## Deployment
 
-- **Live App:** [Insert deployed Render URL]
+- **Live App:** [https://kanban-for-business.onrender.com](https://kanban-for-business.onrender.com)
 - **API Endpoint:** /graphql (same origin)
-- **GitHub Repository:** [Insert repo URL]
+- **GitHub Repository:** [https://github.com/louverture-t/kanban-for-business](https://github.com/louverture-t/kanban-for-business)
 
 ## Screenshots
 
-Add 2-4 screenshots that show key user flows.
+### Dashboard
+![Dashboard](./assets/readmedashboard.png)
 
-![Landing Page](./assets/landing-page.png)
-![Feature Demo](./assets/feature-demo.png)
+### Kanban Board
+![Kanban Board](./assets/readme1kanban.png)
 
 ## Showcase Presentation Checklist
 
