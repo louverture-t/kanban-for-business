@@ -20,13 +20,47 @@ export interface GraphQLContext {
   res: Response;
 }
 
+// --- Auth rate limiter (in-memory, per-IP) ---
+// Limits login / register / refreshToken to 20 attempts per 15-minute window.
+// In-memory store is acceptable for a single-instance Render free tier service;
+// swap to a Redis-backed store if you scale to multiple instances.
+
+const AUTH_RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const AUTH_RATE_MAX = 20;
+const authRateMap = new Map<string, { count: number; windowStart: number }>();
+
+/** Wipes all rate-limit counters. Call in test beforeEach to prevent bleed-over. */
+export function clearAuthRateLimit(): void {
+  authRateMap.clear();
+}
+
+export function checkAuthRateLimit(ip: string | undefined): void {
+  const key = ip ?? 'unknown';
+  const now = Date.now();
+  const entry = authRateMap.get(key);
+
+  if (!entry || now - entry.windowStart > AUTH_RATE_WINDOW_MS) {
+    authRateMap.set(key, { count: 1, windowStart: now });
+    return;
+  }
+
+  if (entry.count >= AUTH_RATE_MAX) {
+    const resetIn = Math.ceil((AUTH_RATE_WINDOW_MS - (now - entry.windowStart)) / 60000);
+    throw new AuthenticationError(
+      `Too many authentication attempts. Try again in ${resetIn} minute${resetIn !== 1 ? 's' : ''}.`,
+    );
+  }
+
+  entry.count++;
+}
+
 // --- Token operations ---
 
 export function signAccessToken(user: TokenPayload): string {
   return jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     JWT_SECRET,
-    { expiresIn: ACCESS_TOKEN_TTL },
+    { expiresIn: ACCESS_TOKEN_TTL, algorithm: 'HS256' },
   );
 }
 
@@ -34,12 +68,12 @@ export function signRefreshToken(user: TokenPayload): string {
   return jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     JWT_SECRET,
-    { expiresIn: REFRESH_TOKEN_TTL },
+    { expiresIn: REFRESH_TOKEN_TTL, algorithm: 'HS256' },
   );
 }
 
 export function verifyToken(token: string): TokenPayload {
-  return jwt.verify(token, JWT_SECRET) as TokenPayload;
+  return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as TokenPayload;
 }
 
 // --- Password operations ---
