@@ -45,38 +45,36 @@ export function PriorityPage() {
   const tasks: ITask[] = data?.tasks ?? [];
 
   return (
-    <div className="p-8">
-      <h1 className="mb-6 text-2xl font-bold">Priority View</h1>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b shrink-0">
+        <h1 className="text-xl font-semibold">Priority View</h1>
+      </div>
 
-      <div className="space-y-8">
+      {/* 3-column kanban layout */}
+      <div className="flex flex-1 gap-3 overflow-x-auto p-4">
         {PRIORITY_SECTIONS.map(({ value, label, color }) => {
           const sectionTasks = tasks.filter((t) => t.priority === value);
 
           return (
-            <section key={value}>
-              <div className="mb-3 flex items-center gap-2">
-                <h2 className={`text-lg font-semibold ${color}`}>{label}</h2>
+            <div key={value} className="flex flex-col flex-1 min-w-[280px] max-w-sm rounded-lg border bg-muted/30 overflow-hidden">
+              {/* Column header */}
+              <div className="px-3 py-2.5 border-b shrink-0 flex items-center gap-2">
+                <h2 className={`font-semibold text-sm ${color}`}>{label}</h2>
                 <Badge variant="secondary">{sectionTasks.length}</Badge>
               </div>
 
-              {sectionTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No {label.toLowerCase()} tasks</p>
-              ) : (
-                <div className="relative">
-                  {/* Right fade gradient — hints at more content beyond the edge */}
-                  <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent z-10" />
-
-                  {/* Grid container */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {sectionTasks.map((task) => (
-                      <div key={task._id}>
-                        <TaskCard task={task} onClick={() => setOpenTaskId(task._id)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
+              {/* Scrollable card list */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                {sectionTasks.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">No tasks</p>
+                ) : (
+                  sectionTasks.map((task) => (
+                    <TaskCard key={task._id} task={task} onClick={() => setOpenTaskId(task._id)} />
+                  ))
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
