@@ -4,6 +4,8 @@ globs:
   - "render.yaml"
   - ".github/workflows/**"
   - "e2e/**"
+  - "playwright.config.ts"
+  - "server/config/connection.ts"
 ---
 
 # Day 5 — Deployment & E2E Standards
