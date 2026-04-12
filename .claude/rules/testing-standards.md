@@ -4,7 +4,6 @@ globs:
   - "**/__tests__/**/*.ts"
   - "**/__tests__/**/*.tsx"
   - "e2e/**/*.ts"
-  - "e2e/**/*.ts"
   - "vitest.config.*"
 ---
 
