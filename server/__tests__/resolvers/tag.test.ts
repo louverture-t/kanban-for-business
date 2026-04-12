@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { Tag, TaskTag, Task, Project } from '@server/models/index.js';
+import { Tag, TaskTag, Task, Project, ProjectMember } from '@server/models/index.js';
 import { tagResolvers } from '@server/resolvers/tagResolvers.js';
 import type { GraphQLContext, TokenPayload } from '@server/utils/auth.js';
 
@@ -33,6 +33,7 @@ beforeEach(async () => {
   await TaskTag.deleteMany({});
   await Task.deleteMany({});
   await Project.deleteMany({});
+  await ProjectMember.deleteMany({});
 
   const project = await Project.create({ name: 'Test Project', createdBy: userId });
   projectId = String(project._id);
@@ -43,6 +44,8 @@ beforeEach(async () => {
     status: 'backlog',
   });
   taskId = String(task._id);
+
+  await ProjectMember.create({ projectId, userId });
 });
 
 // ─── tags query ────────────────────────────────────────────

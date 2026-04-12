@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { Subtask, Task, Project, AuditLog } from '@server/models/index.js';
+import { Subtask, Task, Project, AuditLog, ProjectMember } from '@server/models/index.js';
 import { subtaskResolvers } from '@server/resolvers/subtaskResolvers.js';
 import type { GraphQLContext, TokenPayload } from '@server/utils/auth.js';
 
@@ -27,6 +27,7 @@ beforeEach(async () => {
   await Task.deleteMany({});
   await Project.deleteMany({});
   await AuditLog.deleteMany({});
+  await ProjectMember.deleteMany({});
 
   const project = await Project.create({ name: 'Test Project', createdBy: userId });
   projectId = String(project._id);
@@ -37,6 +38,8 @@ beforeEach(async () => {
     status: 'backlog',
   });
   taskId = String(task._id);
+
+  await ProjectMember.create({ projectId, userId });
 });
 
 // ─── subtasks query ────────────────────────────────────────

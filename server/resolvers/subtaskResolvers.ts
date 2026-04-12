@@ -1,5 +1,5 @@
 import { Subtask, Task, AuditLog } from '@server/models/index.js';
-import { requireAuth, type GraphQLContext } from '@server/utils/auth.js';
+import { requireAuth, requireProjectAccess, type GraphQLContext } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
 import { sanitizeInput } from '@server/utils/validators.js';
 
@@ -10,7 +10,11 @@ export const subtaskResolvers = {
       args: { taskId: string },
       context: GraphQLContext,
     ) => {
-      requireAuth(context);
+      const task = await Task.findById(args.taskId);
+      if (!task) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(task.projectId));
       return Subtask.find({ taskId: args.taskId }).sort({ createdAt: 1 }).exec();
     },
   },
@@ -27,6 +31,7 @@ export const subtaskResolvers = {
       if (!task) {
         throw new NotFoundError('Task not found');
       }
+      await requireProjectAccess(context, String(task.projectId));
 
       const title = sanitizeInput(args.title);
       if (!title.trim()) {
@@ -61,6 +66,12 @@ export const subtaskResolvers = {
       if (!subtask) {
         throw new NotFoundError('Subtask not found');
       }
+
+      const subtaskTask = await Task.findById(subtask.taskId);
+      if (!subtaskTask) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(subtaskTask.projectId));
 
       const updates: Record<string, unknown> = {};
       const changeDetails: string[] = [];
@@ -103,6 +114,12 @@ export const subtaskResolvers = {
       if (!subtask) {
         throw new NotFoundError('Subtask not found');
       }
+
+      const deleteTask = await Task.findById(subtask.taskId);
+      if (!deleteTask) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(deleteTask.projectId));
 
       await Subtask.findByIdAndDelete(args.id);
 

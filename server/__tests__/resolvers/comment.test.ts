@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import mongoose from 'mongoose';
-import { Comment, Task, Project, User, AuditLog, Notification } from '@server/models/index.js';
+import { Comment, Task, Project, User, AuditLog, Notification, ProjectMember } from '@server/models/index.js';
 import { commentResolvers } from '@server/resolvers/commentResolvers.js';
 import type { GraphQLContext, TokenPayload } from '@server/utils/auth.js';
 
@@ -37,6 +37,7 @@ beforeEach(async () => {
   await User.deleteMany({});
   await AuditLog.deleteMany({});
   await Notification.deleteMany({});
+  await ProjectMember.deleteMany({});
 
   const project = await Project.create({ name: 'Test Project', createdBy: userAId });
   projectId = String(project._id);
@@ -48,6 +49,11 @@ beforeEach(async () => {
     assigneeId: userBId,
   });
   taskId = String(task._id);
+
+  // Add all test users as project members
+  await ProjectMember.create({ projectId, userId: userAId });
+  await ProjectMember.create({ projectId, userId: userBId });
+  await ProjectMember.create({ projectId, userId: managerPayload.id });
 
   // Create user docs for field resolver tests
   await User.create({ username: 'alice', password: 'Test@1234', role: 'user' });
