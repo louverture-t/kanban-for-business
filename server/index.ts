@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import path from 'path';
@@ -9,7 +10,7 @@ import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 
 import rateLimit from 'express-rate-limit';
-import { connectDB, PORT, NODE_ENV, CLIENT_ORIGIN } from '@server/config/connection.js';
+import { connectDB, PORT, NODE_ENV, CLIENT_ORIGIN, JWT_SECRET } from '@server/config/connection.js';
 import { runArchiveSweep, runPurgeSweep } from '@server/utils/sweeps.js';
 import { buildContext, type GraphQLContext } from '@server/utils/auth.js';
 import typeDefs from '@server/schemas/typeDefs.js';
@@ -37,7 +38,15 @@ const server = new ApolloServer<GraphQLContext>({
 await server.start();
 
 // --- Middleware ---
-app.use(cookieParser());
+app.use(
+  helmet({
+    // CSP disabled in dev — Apollo Sandbox and Vite HMR inject inline scripts
+    contentSecurityPolicy: NODE_ENV === 'production',
+    // HSTS disabled in dev (HTTP only)
+    strictTransportSecurity: NODE_ENV === 'production',
+  }),
+);
+app.use(cookieParser(JWT_SECRET));
 
 // Trim CLIENT_ORIGIN to prevent ERR_INVALID_CHAR from whitespace in env vars
 const sanitizedOrigin = CLIENT_ORIGIN?.trim() || undefined;
@@ -109,7 +118,10 @@ app.post('/api/upload', uploadLimiter, cors(corsOptions), upload.single('file'),
       text = result.text;
     }
 
-    res.json({ text, filename: req.file.originalname });
+    // Strip path components and non-word characters to prevent
+    // path-traversal artifacts and social-engineering via raw filenames.
+    const safeFilename = path.basename(req.file.originalname).replace(/[^\w.\-]/g, '_');
+    res.json({ text, filename: safeFilename });
   } catch (error) {
     res.status(500).json({ error: 'Failed to process file' });
   }

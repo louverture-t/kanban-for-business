@@ -5,7 +5,8 @@ process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import { beforeAll, afterAll } from 'vitest';
+import { beforeAll, afterAll, beforeEach } from 'vitest';
+import { clearAuthRateLimit } from '@server/utils/auth.js';
 
 let mongoServer: MongoMemoryServer;
 
@@ -17,4 +18,10 @@ beforeAll(async () => {
 afterAll(async () => {
   await mongoose.disconnect();
   await mongoServer.stop();
+});
+
+// Reset the in-memory auth rate-limit map between tests so individual
+// test cases don't bleed their attempt counts into subsequent tests.
+beforeEach(() => {
+  clearAuthRateLimit();
 });

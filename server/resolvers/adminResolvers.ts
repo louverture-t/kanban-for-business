@@ -51,6 +51,11 @@ export const adminResolvers = {
         }
       }
 
+      const VALID_ROLES = ['user', 'manager', 'superadmin'] as const;
+      if (args.role !== undefined && !VALID_ROLES.includes(args.role as (typeof VALID_ROLES)[number])) {
+        throw new ValidationError(`Invalid role: "${args.role}". Must be one of: ${VALID_ROLES.join(', ')}`);
+      }
+
       const setFields: Record<string, unknown> = {};
       if (args.role !== undefined) setFields.role = args.role;
       if (args.active !== undefined) setFields.active = args.active;

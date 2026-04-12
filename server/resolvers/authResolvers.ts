@@ -7,6 +7,7 @@ import {
   comparePassword,
   hashRefreshToken,
   requireAuth,
+  checkAuthRateLimit,
   type GraphQLContext,
   type TokenPayload,
 } from '@server/utils/auth.js';
@@ -56,6 +57,7 @@ export const authResolvers = {
       args: { username: string; password: string },
       context: GraphQLContext,
     ) => {
+      checkAuthRateLimit(context.req.ip);
       const { username, password } = args;
 
       const user = await User.findOne({ username });
@@ -127,6 +129,7 @@ export const authResolvers = {
       args: { username: string; password: string; email?: string; token: string },
       context: GraphQLContext,
     ) => {
+      checkAuthRateLimit(context.req.ip);
       const { username, password, email, token: inviteToken } = args;
 
       // Validate invite token
@@ -228,6 +231,7 @@ export const authResolvers = {
       _args: unknown,
       context: GraphQLContext,
     ) => {
+      checkAuthRateLimit(context.req.ip);
       const token = context.req.cookies?.refresh_token;
       if (!token) {
         throw new AuthenticationError('No refresh token');
