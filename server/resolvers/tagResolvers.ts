@@ -2,6 +2,7 @@ import { Tag, TaskTag, Task } from '@server/models/index.js';
 import {
   requireAuth,
   requireManagerOrAbove,
+  requireProjectAccess,
   type GraphQLContext,
 } from '@server/utils/auth.js';
 import { NotFoundError, ValidationError } from '@server/utils/errors.js';
@@ -23,7 +24,11 @@ export const tagResolvers = {
       args: { taskId: string },
       context: GraphQLContext,
     ) => {
-      requireAuth(context);
+      const task = await Task.findById(args.taskId);
+      if (!task) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(task.projectId));
       const taskTags = await TaskTag.find({ taskId: args.taskId }).exec();
       const tagIds = taskTags.map((tt) => tt.tagId);
       return Tag.find({ _id: { $in: tagIds } }).sort({ name: 1 }).exec();
@@ -60,6 +65,7 @@ export const tagResolvers = {
       if (!task) {
         throw new NotFoundError('Task not found');
       }
+      await requireProjectAccess(context, String(task.projectId));
 
       const tag = await Tag.findById(args.tagId);
       if (!tag) {
@@ -88,6 +94,12 @@ export const tagResolvers = {
       context: GraphQLContext,
     ) => {
       requireAuth(context);
+
+      const removeTask = await Task.findById(args.taskId);
+      if (!removeTask) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(removeTask.projectId));
 
       const result = await TaskTag.findOneAndDelete({
         taskId: args.taskId,

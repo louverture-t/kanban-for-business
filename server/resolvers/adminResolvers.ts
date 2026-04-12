@@ -37,6 +37,20 @@ export const adminResolvers = {
         throw new ValidationError('Cannot deactivate your own account');
       }
 
+      if (args.role !== undefined && args.role !== 'superadmin' && args.id === authUser.id) {
+        throw new ValidationError('Cannot demote your own superadmin account');
+      }
+
+      if (args.role !== undefined && args.role !== 'superadmin') {
+        const target = await User.findById(args.id);
+        if (target?.role === 'superadmin') {
+          const superadminCount = await User.countDocuments({ role: 'superadmin' });
+          if (superadminCount <= 1) {
+            throw new ValidationError('Cannot demote the last superadmin');
+          }
+        }
+      }
+
       const setFields: Record<string, unknown> = {};
       if (args.role !== undefined) setFields.role = args.role;
       if (args.active !== undefined) setFields.active = args.active;

@@ -2,6 +2,7 @@ import { Comment, Task, User, AuditLog, Notification } from '@server/models/inde
 import {
   requireAuth,
   requireManagerOrAbove,
+  requireProjectAccess,
   type GraphQLContext,
 } from '@server/utils/auth.js';
 import { ValidationError, NotFoundError } from '@server/utils/errors.js';
@@ -14,7 +15,11 @@ export const commentResolvers = {
       args: { taskId: string },
       context: GraphQLContext,
     ) => {
-      requireAuth(context);
+      const task = await Task.findById(args.taskId);
+      if (!task) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(task.projectId));
       return Comment.find({ taskId: args.taskId }).sort({ createdAt: 1 }).exec();
     },
 
@@ -23,7 +28,11 @@ export const commentResolvers = {
       args: { taskId: string },
       context: GraphQLContext,
     ) => {
-      requireAuth(context);
+      const task = await Task.findById(args.taskId);
+      if (!task) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(task.projectId));
       return AuditLog.find({ taskId: args.taskId }).sort({ createdAt: -1 }).exec();
     },
   },
@@ -40,6 +49,7 @@ export const commentResolvers = {
       if (!task) {
         throw new NotFoundError('Task not found');
       }
+      await requireProjectAccess(context, String(task.projectId));
 
       const content = sanitizeInput(args.content);
       if (!content.trim()) {
@@ -84,6 +94,12 @@ export const commentResolvers = {
       if (!comment) {
         throw new NotFoundError('Comment not found');
       }
+
+      const commentTask = await Task.findById(comment.taskId);
+      if (!commentTask) {
+        throw new NotFoundError('Task not found');
+      }
+      await requireProjectAccess(context, String(commentTask.projectId));
 
       // Only the author or a manager+ can delete
       const isAuthor = String(comment.authorId) === user.id;
