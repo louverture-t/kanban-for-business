@@ -1,7 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TASKS_QUERY } from '@client/graphql/operations';
 import { TaskCard } from '@client/components/task-card';
 import { TaskDialog } from '@client/components/task-dialog';
@@ -19,20 +18,11 @@ export function PriorityPage() {
   const { projectId } = useParams<{ projectId: string }>();
 
   const [openTaskId, setOpenTaskId] = useState<string | undefined>();
-  const scrollRefs = useRef<Record<string, HTMLDivElement>>({});
 
   const { data, loading, error } = useQuery<{ tasks: ITask[] }>(TASKS_QUERY, {
     variables: { projectId, includeArchived: false },
     skip: !projectId,
   });
-
-  const scrollLeft = (key: string) => {
-    scrollRefs.current[key]?.scrollBy({ left: -300, behavior: 'smooth' });
-  };
-
-  const scrollRight = (key: string) => {
-    scrollRefs.current[key]?.scrollBy({ left: 300, behavior: 'smooth' });
-  };
 
   if (loading) {
     return (
@@ -73,38 +63,13 @@ export function PriorityPage() {
                 <p className="text-sm text-muted-foreground">No {label.toLowerCase()} tasks</p>
               ) : (
                 <div className="relative">
-                  {/* Left fade gradient */}
-                  <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-background to-transparent z-10" />
+                  {/* Right fade gradient — hints at more content beyond the edge */}
+                  <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-background to-transparent z-10" />
 
-                  {/* Right fade gradient */}
-                  <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
-
-                  {/* Left arrow button */}
-                  <button
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 rounded-full border bg-background shadow-sm p-1 hover:bg-accent"
-                    onClick={() => scrollLeft(value)}
-                    aria-label={`Scroll ${label} left`}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-
-                  {/* Right arrow button */}
-                  <button
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 rounded-full border bg-background shadow-sm p-1 hover:bg-accent"
-                    onClick={() => scrollRight(value)}
-                    aria-label={`Scroll ${label} right`}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-
-                  {/* Scroll container */}
-                  <div
-                    ref={(el) => { if (el) scrollRefs.current[value] = el; }}
-                    className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
-                    style={{ scrollbarWidth: 'none' }}
-                  >
+                  {/* Grid container */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {sectionTasks.map((task) => (
-                      <div key={task._id} className="w-72 flex-shrink-0">
+                      <div key={task._id}>
                         <TaskCard task={task} onClick={() => setOpenTaskId(task._id)} />
                       </div>
                     ))}
