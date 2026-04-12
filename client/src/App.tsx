@@ -12,6 +12,7 @@ import { SleepOverlay } from '@client/components/sleep-overlay';
 import { useIdleTimer } from '@client/hooks/use-idle-timer';
 import { SearchCommand } from '@client/components/search-command';
 import { Toaster } from '@client/components/toaster';
+import { TooltipProvider } from '@client/components/ui/tooltip';
 
 // When a new deploy replaces hashed chunk filenames, already-open tabs will
 // fail to import old chunks. Detect that specific failure and force a single
@@ -162,6 +163,7 @@ function App() {
     <ErrorBoundary>
       <ApolloProvider client={apolloClient}>
         <ThemeProvider>
+          <TooltipProvider>
           <BrowserRouter>
             <AuthProvider>
               <Toaster />
@@ -195,6 +197,7 @@ function App() {
               </Suspense>
             </AuthProvider>
           </BrowserRouter>
+          </TooltipProvider>
         </ThemeProvider>
       </ApolloProvider>
     </ErrorBoundary>
